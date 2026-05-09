@@ -123,14 +123,32 @@ jobs:
         run: kubectl set env deploy/user-service -n "$NAMESPACE" APP_CORS_ALLOWED_ORIGIN- || true
 
       - name: Wait for rollouts
+        shell: bash
         run: |
-          kubectl rollout status deploy/mysql -n "$NAMESPACE" --timeout=300s
-          kubectl rollout status deploy/eureka-server -n "$NAMESPACE" --timeout=300s
-          kubectl rollout status deploy/config-server -n "$NAMESPACE" --timeout=300s
-          kubectl rollout status deploy/user-service -n "$NAMESPACE" --timeout=300s
-          kubectl rollout status deploy/projet-service -n "$NAMESPACE" --timeout=300s
-          kubectl rollout status deploy/api-gateway -n "$NAMESPACE" --timeout=300s
-          kubectl rollout status deploy/frontend -n "$NAMESPACE" --timeout=300s
+          set -euo pipefail
+
+          wait_rollout() {
+            local dep="$1"
+            echo "=== Rollout: $dep ==="
+            if ! kubectl rollout status "deploy/$dep" -n "$NAMESPACE" --timeout=600s; then
+              echo "Rollout timeout for $dep. Collecting diagnostics..."
+              kubectl get deploy "$dep" -n "$NAMESPACE" -o wide || true
+              kubectl get rs -n "$NAMESPACE" -l app="$dep" || true
+              kubectl get pods -n "$NAMESPACE" -l app="$dep" -o wide || true
+
+              # Auto-clean old pods stuck in Terminating, then re-check rollout quickly.
+              kubectl get pods -n "$NAMESPACE" -l app="$dep" | awk '/Terminating/{print $1}' | xargs -r kubectl delete pod -n "$NAMESPACE" --grace-period=0 --force || true
+              kubectl rollout status "deploy/$dep" -n "$NAMESPACE" --timeout=180s
+            fi
+          }
+
+          wait_rollout mysql
+          wait_rollout eureka-server
+          wait_rollout config-server
+          wait_rollout user-service
+          wait_rollout projet-service
+          wait_rollout api-gateway
+          wait_rollout frontend
 
       - name: Final status
         run: kubectl get pods -n "$NAMESPACE" -o wide
