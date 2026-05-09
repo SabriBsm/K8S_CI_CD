@@ -110,19 +110,40 @@ jobs:
           kubectl apply -f k8s/22-projet-service-hpa.yaml
           kubectl apply -f k8s/23-ingress.yaml
 
-      - name: Set deployment images
+      - name: Rollout eureka-server
         run: |
           kubectl set image deploy/eureka-server -n "$NAMESPACE" eureka-server="$DOCKERHUB_USERNAME/plansync-eureka-server:$TAG"
+          kubectl rollout status deploy/eureka-server -n "$NAMESPACE" --timeout=600s
+
+      - name: Rollout config-server
+        run: |
           kubectl set image deploy/config-server -n "$NAMESPACE" config-server="$DOCKERHUB_USERNAME/plansync-config-server:$TAG"
+          kubectl rollout status deploy/config-server -n "$NAMESPACE" --timeout=600s
+
+      - name: Rollout user-service
+        run: |
           kubectl set image deploy/user-service -n "$NAMESPACE" user-service="$DOCKERHUB_USERNAME/plansync-user-service:$TAG"
+          kubectl rollout status deploy/user-service -n "$NAMESPACE" --timeout=600s
+
+      - name: Rollout projet-service
+        run: |
           kubectl set image deploy/projet-service -n "$NAMESPACE" projet-service="$DOCKERHUB_USERNAME/plansync-projet-service:$TAG"
+          kubectl rollout status deploy/projet-service -n "$NAMESPACE" --timeout=600s
+
+      - name: Rollout api-gateway
+        run: |
           kubectl set image deploy/api-gateway -n "$NAMESPACE" api-gateway="$DOCKERHUB_USERNAME/plansync-api-gateway:$TAG"
+          kubectl rollout status deploy/api-gateway -n "$NAMESPACE" --timeout=600s
+
+      - name: Rollout frontend
+        run: |
           kubectl set image deploy/frontend -n "$NAMESPACE" frontend="$DOCKERHUB_USERNAME/plansync-frontend:$TAG"
+          kubectl rollout status deploy/frontend -n "$NAMESPACE" --timeout=600s
 
       - name: Remove old legacy env var
         run: kubectl set env deploy/user-service -n "$NAMESPACE" APP_CORS_ALLOWED_ORIGIN- || true
 
-      - name: Wait for rollouts
+      - name: Verify final rollouts
         shell: bash
         run: |
           set -euo pipefail
