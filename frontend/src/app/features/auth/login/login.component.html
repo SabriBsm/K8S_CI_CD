@@ -1,0 +1,112 @@
+<div class="auth-wrapper">
+  <div class="auth-card">
+    <!-- Left panel -->
+    <div class="auth-panel-left">
+      <div class="auth-panel-content">
+        <div class="brand-logo">
+          <i class="pi pi-sync"></i>
+        </div>
+        <h2>PlanSync Pro</h2>
+        <p>Synchronize plans. Deliver smarter.</p>
+        <div class="auth-features">
+          <div class="feature-item">
+            <i class="pi pi-check-circle"></i>
+            <span>Centralized project planning</span>
+          </div>
+          <div class="feature-item">
+            <i class="pi pi-check-circle"></i>
+            <span>Real-time collaboration</span>
+          </div>
+          <div class="feature-item">
+            <i class="pi pi-check-circle"></i>
+            <span>AI-powered risk prediction</span>
+          </div>
+          <div class="feature-item">
+            <i class="pi pi-check-circle"></i>
+            <span>Smart financial tracking</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right form panel -->
+    <div class="auth-panel-right">
+      <div class="auth-form-wrapper">
+        <div class="form-header">
+          <h3>Welcome back</h3>
+          <p>Sign in to your PlanSync account</p>
+        </div>
+
+        <p-messages [(value)]="messages" [closable]="true"></p-messages>
+
+        <form [formGroup]="form" (ngSubmit)="onSubmit()">
+          <!-- Email -->
+          <div class="form-field">
+            <label for="email">Email address</label>
+            <span class="p-input-icon-left w-full">
+              <i class="pi pi-envelope"></i>
+              <input
+                id="email"
+                pInputText
+                formControlName="email"
+                type="email"
+                placeholder="you@company.com"
+                class="w-full"
+                [class.ng-invalid]="isInvalid('email')"
+                [class.ng-dirty]="isInvalid('email')" />
+            </span>
+            <small *ngIf="isInvalid('email')" class="field-error">
+              <span *ngIf="form.get('email')?.errors?.['required']">Email is required</span>
+              <span *ngIf="form.get('email')?.errors?.['email']">Enter a valid email</span>
+            </small>
+          </div>
+
+          <!-- Password -->
+          <div class="form-field">
+            <div class="field-label-row">
+              <label for="password">Password</label>
+              <a routerLink="/auth/forgot-password" class="forgot-link">Forgot password?</a>
+            </div>
+            <p-password
+              id="password"
+              formControlName="password"
+              placeholder="Enter your password"
+              [feedback]="false"
+              [toggleMask]="true"
+              styleClass="w-full"
+              inputStyleClass="w-full"
+              [class.ng-invalid]="isInvalid('password')"
+              [class.ng-dirty]="isInvalid('password')">
+            </p-password>
+            <small *ngIf="isInvalid('password')" class="field-error">
+              <span *ngIf="form.get('password')?.errors?.['required']">Password is required</span>
+              <span *ngIf="form.get('password')?.errors?.['minlength']">Minimum 6 characters</span>
+            </small>
+          </div>
+
+          <!-- Remember me -->
+
+
+          <!-- Submit -->
+          <button
+            pButton
+            pRipple
+            type="submit"
+            label="Sign in"
+            icon="pi pi-arrow-right"
+            iconPos="right"
+            class="w-full submit-btn"
+            [loading]="loading">
+          </button>
+        </form>
+
+        <p-divider></p-divider>
+
+        <p class="register-link">
+          New to PlanSync? <a routerLink="/auth/register">Sign up</a>
+        </p>
+
+      </div>
+    </div>
+  </div>
+</div>

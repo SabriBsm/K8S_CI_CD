@@ -1,0 +1,292 @@
+<div class="quality-page">
+  <div class="section-header">
+    <div>
+      <h3>Non-Conformities</h3>
+      <p>Follow findings through remediation, due dates, and responsible owners.</p>
+    </div>
+    <div class="section-actions">
+      <span class="p-input-icon-left search-box">
+        <i class="pi pi-search"></i>
+        <input pInputText [(ngModel)]="globalSearch" placeholder="Search findings..." />
+      </span>
+      <p-dropdown
+        [options]="sortByOptions"
+        [(ngModel)]="selectedSortBy"
+        optionLabel="label"
+        optionValue="value"
+        styleClass="p-inputtext-sm sort-dropdown"
+        (onChange)="onSortChange()">
+      </p-dropdown>
+      <p-dropdown
+        [options]="sortDirOptions"
+        [(ngModel)]="selectedSortDir"
+        optionLabel="label"
+        optionValue="value"
+        styleClass="p-inputtext-sm sort-dropdown"
+        (onChange)="onSortChange()">
+      </p-dropdown>
+    </div>
+  </div>
+
+  <div class="ps-page-card">
+    <p-table [value]="filteredItems" [loading]="loading" [rowHover]="true" responsiveLayout="scroll" styleClass="p-datatable-sm">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Reference</th>
+          <th>Finding</th>
+          <th>Severity</th>
+          <th>Status</th>
+          <th>Assigned To</th>
+          <th>Due Date</th>
+          <th style="width: 12rem; text-align: center;">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-item>
+        <tr>
+          <td class="emphasis">{{ item.referenceCode }}</td>
+          <td>
+            <div class="item-title">{{ item.title }}</div>
+            <div class="item-meta">{{ item.project?.name || 'No linked project' }}</div>
+          </td>
+          <td><span class="badge" [ngClass]="getSeverityClass(item.severity)">{{ item.severity }}</span></td>
+          <td><span class="badge" [ngClass]="getStatusClass(item.status)">{{ item.status.split('_').join(' ') }}</span></td>
+          <td>{{ item.assignedTo?.firstName }} {{ item.assignedTo?.lastName }}</td>
+          <td>{{ item.dueDate ? (item.dueDate | date:'MMM d, y') : 'Not set' }}</td>
+          <td>
+            <div class="action-btns">
+              <button
+                pButton
+                pRipple
+                icon="pi pi-sparkles"
+                class="p-button-text p-button-sm"
+                pTooltip="Test ML prediction"
+                (click)="openMlDialog(item)">
+              </button>
+              <button
+                pButton
+                pRipple
+                icon="pi pi-lightbulb"
+                class="p-button-text p-button-sm"
+                [disabled]="aiLoading && generatingItemId === item.id"
+                pTooltip="Generate AI suggestions"
+                (click)="generateSuggestions(item)">
+              </button>
+              <button
+                pButton
+                pRipple
+                icon="pi pi-check-circle"
+                class="p-button-text p-button-sm"
+                [disabled]="item.status === 'CLOSED'"
+                pTooltip="Close finding"
+                (click)="closeItem(item)">
+              </button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<p-dialog
+  header="Smart Corrective Action Recommendations"
+  [(visible)]="aiDialogVisible"
+  [modal]="true"
+  [closable]="true"
+  [dismissableMask]="true"
+  [style]="{ width: '52rem', maxWidth: '95vw' }"
+  (onHide)="closeAiDialog()">
+  <div class="ai-dialog-body">
+    <div class="ai-dialog-meta">
+      <div class="emphasis">{{ aiSelectedReference || 'Draft finding' }}</div>
+      <div class="item-meta">{{ aiSelectedTitle || 'Non-conformity' }}</div>
+    </div>
+
+    <div class="ai-state" *ngIf="aiLoading">
+      <i class="pi pi-spin pi-spinner"></i>
+      <span>Generating AI suggestions and checking similar past cases...</span>
+    </div>
+
+    <div class="ai-state ai-state-error" *ngIf="!aiLoading && aiError">
+      <i class="pi pi-exclamation-circle"></i>
+      <span>{{ aiError }}</span>
+    </div>
+
+    <div class="ai-results" *ngIf="!aiLoading && aiSuggestions">
+      <div class="smart-title">
+        <span class="ai-label">AI Suggestions</span>
+      </div>
+
+      <div class="ai-section">
+        <span class="ai-label">Probable Root Cause</span>
+        <p>{{ aiSuggestions.probableRootCause }}</p>
+      </div>
+
+      <div class="ai-section">
+        <span class="ai-label">Suggested Priority</span>
+        <span class="badge" [ngClass]="getSeverityClass(aiSuggestions.suggestedPriority)">
+          {{ aiSuggestions.suggestedPriority }}
+        </span>
+      </div>
+
+      <div class="ai-section">
+        <span class="ai-label">Suggested Corrective Actions</span>
+        <ul class="ai-actions">
+          <li *ngFor="let action of aiSuggestions.suggestedCorrectiveActions">{{ action }}</li>
+        </ul>
+      </div>
+
+      <div class="ai-section">
+        <span class="ai-label">Reasoning</span>
+        <p>{{ aiSuggestions.reasoning }}</p>
+      </div>
+
+      <div class="ai-state ai-state-error" *ngIf="aiApplyError">
+        <i class="pi pi-exclamation-circle"></i>
+        <span>{{ aiApplyError }}</span>
+      </div>
+
+      <div class="ai-dialog-actions">
+        <button
+          pButton
+          pRipple
+          type="button"
+          label="Create Corrective Action"
+          icon="pi pi-wrench"
+          [loading]="aiCreateLoading"
+          [disabled]="aiCreateLoading"
+          (click)="createCorrectiveActionFromSuggestion()">
+        </button>
+      </div>
+
+      <div class="smart-history">
+        <div class="smart-title">
+          <span class="ai-label">Recommended From Similar Past Cases</span>
+        </div>
+
+        <div
+          class="historical-empty"
+          *ngIf="!smartRecommendations?.historicalRecommendations?.length">
+          No historical recommendations found for similar past cases.
+        </div>
+
+        <div
+          class="historical-recommendation"
+          *ngFor="let recommendation of smartRecommendations?.historicalRecommendations || []">
+          <div class="historical-header">
+            <div>
+              <div class="item-title">
+                #{{ recommendation.rank }} {{ recommendation.recommendedTitle }}
+              </div>
+              <div class="item-meta">
+                Source:
+                {{ recommendation.sourceNonConformityReferenceCode || ('NC-' + recommendation.sourceNonConformityId) }}
+                <span *ngIf="recommendation.sourceNonConformityTitle">
+                  - {{ recommendation.sourceNonConformityTitle }}
+                </span>
+              </div>
+            </div>
+            <div class="historical-score">
+              <span class="ai-label">Score</span>
+              <strong>{{ recommendation.score }}</strong>
+            </div>
+          </div>
+
+          <p class="historical-description" *ngIf="recommendation.recommendedDescription">
+            {{ recommendation.recommendedDescription }}
+          </p>
+
+          <div class="historical-meta">
+            <span class="badge" *ngIf="recommendation.status">{{ recommendation.status }}</span>
+            <span class="badge" [ngClass]="getSeverityClass(recommendation.priority || aiSelectedItem?.severity || 'MEDIUM')">
+              {{ recommendation.priority || aiSelectedItem?.severity || 'MEDIUM' }}
+            </span>
+          </div>
+
+          <div class="historical-reason">
+            <span class="ai-label">Reason</span>
+            <p>{{ recommendation.reason }}</p>
+          </div>
+
+          <div class="ai-dialog-actions">
+            <button
+              pButton
+              pRipple
+              type="button"
+              label="Use this recommendation"
+              icon="pi pi-check"
+              class="p-button-outlined p-button-sm"
+              [loading]="recommendationCreateLoadingId === recommendation.sourceCorrectiveActionId"
+              [disabled]="!!recommendationCreateLoadingId"
+              (click)="createCorrectiveActionFromRecommendation(recommendation)">
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</p-dialog>
+
+<p-dialog
+  header="ML Prediction Test"
+  [(visible)]="mlDialogVisible"
+  [modal]="true"
+  [closable]="true"
+  [dismissableMask]="true"
+  [style]="{ width: '42rem', maxWidth: '95vw' }"
+  (onHide)="closeMlDialog()">
+  <div class="ai-dialog-body">
+    <div class="ai-dialog-meta">
+      <div class="emphasis">{{ mlSelectedReference || 'Draft finding' }}</div>
+      <div class="item-meta">{{ mlSelectedTitle || 'Non-conformity' }}</div>
+    </div>
+
+    <div class="ml-section">
+      <label class="ai-label" for="ml-description">Description</label>
+      <textarea
+        id="ml-description"
+        pInputTextarea
+        [(ngModel)]="mlDescription"
+        rows="6"
+        [autoResize]="true"
+        placeholder="Enter the non-conformity description to test the ONNX model">
+      </textarea>
+    </div>
+
+    <div class="ai-state" *ngIf="mlLoading">
+      <i class="pi pi-spin pi-spinner"></i>
+      <span>Running ONNX prediction...</span>
+    </div>
+
+    <div class="ai-state ai-state-error" *ngIf="!mlLoading && mlError">
+      <i class="pi pi-exclamation-circle"></i>
+      <span>{{ mlError }}</span>
+    </div>
+
+    <div class="ml-results" *ngIf="!mlLoading && mlPrediction">
+      <div class="ml-result-card">
+        <span class="ai-label">Predicted Category</span>
+        <div class="ml-result-value">{{ mlPrediction.predictedCategory }}</div>
+      </div>
+
+      <div class="ml-result-card">
+        <span class="ai-label">Predicted Priority</span>
+        <div class="badge" [ngClass]="getSeverityClass(mlPrediction.predictedPriority)">
+          {{ mlPrediction.predictedPriority }}
+        </div>
+      </div>
+    </div>
+
+    <div class="ml-actions">
+      <button
+        pButton
+        pRipple
+        type="button"
+        label="Predict"
+        icon="pi pi-play"
+        [loading]="mlLoading"
+        (click)="runMlPrediction()">
+      </button>
+    </div>
+  </div>
+</p-dialog>

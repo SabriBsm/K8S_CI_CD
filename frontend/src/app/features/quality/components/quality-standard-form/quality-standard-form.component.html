@@ -1,0 +1,67 @@
+<p-dialog
+  [header]="isEdit ? 'Edit Quality Standard' : 'Create Quality Standard'"
+  [(visible)]="visible"
+  (onHide)="close()"
+  [style]="{ width: '640px' }"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false">
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="field-row-2">
+      <div class="form-field">
+        <label>Code <span class="req">*</span></label>
+        <input pInputText formControlName="code" placeholder="OWASP-ASVS-4.0" class="w-full" />
+        <small *ngIf="isInvalid('code')" class="field-error">Code is required</small>
+      </div>
+
+      <div class="form-field">
+        <label>Version <span class="req">*</span></label>
+        <input pInputText formControlName="version" placeholder="4.0" class="w-full" />
+        <small *ngIf="isInvalid('version')" class="field-error">Version is required</small>
+      </div>
+    </div>
+
+    <div class="form-field">
+      <label>Name <span class="req">*</span></label>
+      <input pInputText formControlName="name" placeholder="Authentication and Session Security Standard" class="w-full" />
+      <small *ngIf="isInvalid('name')" class="field-error">Name is required</small>
+    </div>
+
+    <div class="form-field">
+      <label>Description <span class="req">*</span></label>
+      <textarea pInputTextarea formControlName="description" rows="4" placeholder="Describe the standard scope and controls." class="w-full"></textarea>
+      <small *ngIf="isInvalid('description')" class="field-error">Description is required</small>
+    </div>
+
+    <div class="field-row-3">
+      <div class="form-field">
+        <label>Category <span class="req">*</span></label>
+        <p-dropdown formControlName="category" [options]="categories" optionLabel="label" optionValue="value" placeholder="Select category" styleClass="w-full"></p-dropdown>
+        <small *ngIf="isInvalid('category')" class="field-error">Category is required</small>
+      </div>
+
+      <div class="form-field">
+        <label>Source <span class="req">*</span></label>
+        <p-dropdown formControlName="sourceType" [options]="sourceTypes" optionLabel="label" optionValue="value" placeholder="Select source" styleClass="w-full"></p-dropdown>
+        <small *ngIf="isInvalid('sourceType')" class="field-error">Source is required</small>
+      </div>
+
+      <div class="form-field">
+        <label>Status <span class="req">*</span></label>
+        <p-dropdown formControlName="active" [options]="statuses" optionLabel="label" optionValue="value" styleClass="w-full"></p-dropdown>
+      </div>
+    </div>
+
+    <div class="form-field">
+      <label>Project <span class="req">*</span></label>
+      <p-dropdown formControlName="projectId" [options]="projects" optionLabel="name" optionValue="id" placeholder="Assign to project" styleClass="w-full"></p-dropdown>
+      <small *ngIf="isInvalid('projectId')" class="field-error">Project is required</small>
+    </div>
+  </form>
+
+  <ng-template pTemplate="footer">
+    <button pButton pRipple label="Cancel" class="p-button-text p-button-sm" [disabled]="loading" (click)="close()"></button>
+    <button pButton pRipple [label]="isEdit ? 'Save Changes' : 'Create Standard'" class="p-button-sm" [loading]="loading" [disabled]="loading" (click)="onSubmit()"></button>
+  </ng-template>
+</p-dialog>

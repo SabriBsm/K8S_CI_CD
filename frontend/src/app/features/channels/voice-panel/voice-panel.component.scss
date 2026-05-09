@@ -1,0 +1,233 @@
+.vp {
+  background: #1e1f22;
+  border-radius: 8px;
+  border: 1px solid #3a3b3e;
+  overflow: hidden;
+  margin-top: 8px;
+  flex-shrink: 0;
+}
+
+// ── Header ────────────────────────────────────────────────────
+.vp-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #2b2d31;
+  border-bottom: 1px solid #3a3b3e;
+  font-size: 13px;
+  font-weight: 600;
+  color: #dbdee1;
+}
+
+.vp-icon { color: #23a55a; font-size: 15px; }
+.vp-title { flex: 1; }
+
+.vp-live {
+  font-size: 10px;
+  background: #23a55a;
+  color: #fff;
+  padding: 2px 7px;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+  font-weight: 700;
+}
+
+.vp-waiting-badge {
+  font-size: 10px;
+  background: #faa61a;
+  color: #000;
+  padding: 2px 7px;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+  font-weight: 700;
+}
+
+// ── Users ─────────────────────────────────────────────────────
+.vp-users {
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vp-user {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid #2b2d31;
+
+  &:last-child { border-bottom: none; }
+}
+
+.vp-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.vp-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &--self   { background: #5865f2; color: #fff; }
+  &--remote { background: #23a55a; color: #fff; }
+}
+
+// Pulsing ring when speaking
+.vp-ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid #5865f2;
+  animation: ring-pulse 0.8s ease-in-out infinite;
+
+  &--remote { border-color: #23a55a; }
+}
+
+@keyframes ring-pulse {
+  0%, 100% { transform: scale(1);    opacity: 0.9; }
+  50%       { transform: scale(1.15); opacity: 0.4; }
+}
+
+.vp-user-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vp-user-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #dbdee1;
+}
+
+.vp-you { font-size: 11px; color: #80848e; font-weight: 400; }
+
+// ── Level Bar ─────────────────────────────────────────────────
+.vp-level-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  i { font-size: 12px; color: #80848e; }
+}
+
+.vp-muted-icon { color: #f23f43 !important; }
+
+.vp-speaking-icon { color: #23a55a !important; }
+
+.vp-level-bar {
+  flex: 1;
+  height: 4px;
+  background: #383a40;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.vp-level-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.05s linear;
+
+  &--local  { background: linear-gradient(90deg, #5865f2, #7289da); }
+  &--remote { background: linear-gradient(90deg, #23a55a, #57f287); }
+}
+
+.vp-level-hint {
+  font-size: 10px;
+  color: #5c5f66;
+  min-width: 60px;
+
+  &--muted  { color: #f23f43; }
+  &--active { color: #23a55a; }
+}
+
+// ── Idle / Waiting ────────────────────────────────────────────
+.vp-idle {
+  padding: 16px 14px;
+  text-align: center;
+  color: #80848e;
+  font-size: 13px;
+
+  p { margin: 6px 0 0; }
+}
+
+.vp-idle-icon { font-size: 24px; color: #5c5f66; }
+
+.vp-waiting {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #80848e;
+}
+
+.vp-connecting {
+  font-size: 11px;
+  color: #faa61a;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+// ── Status / Error ────────────────────────────────────────────
+.vp-status {
+  padding: 4px 14px;
+  font-size: 11px;
+  color: #80848e;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.vp-error {
+  padding: 6px 14px;
+  font-size: 12px;
+  color: #f38ba8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #2d1b1b;
+  border-top: 1px solid #4a2020;
+}
+
+// ── Controls ─────────────────────────────────────────────────
+.vp-controls {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #2b2d31;
+  border-top: 1px solid #3a3b3e;
+}
+
+.vp-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: filter 0.15s, transform 0.1s;
+  background: #383a40;
+  color: #dbdee1;
+
+  &:hover  { filter: brightness(1.2); }
+  &:active { transform: scale(0.97); }
+
+  i { font-size: 13px; }
+
+  &--join   { background: #23a55a; color: #fff; flex: 1; justify-content: center; }
+  &--hangup { background: #f23f43; color: #fff; }
+  &--muted  { background: #ed4245; color: #fff; }
+}

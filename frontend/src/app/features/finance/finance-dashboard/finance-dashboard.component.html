@@ -1,0 +1,141 @@
+<section class="finance-dashboard-page">
+  <section class="hero">
+    <div class="hero-copy">
+      <div class="hero-kicker">
+        <span>AI FINANCE COMMAND</span>
+        <span class="workspace-chip">{{ workspaceLabel }}</span>
+      </div>
+      <h1>Financial analytics and AI risk monitoring</h1>
+      <p>
+        Track budget consumption, spending momentum, project-level exposure, and AI-generated warnings from one finance dashboard.
+      </p>
+      <div class="hero-actions">
+        <button
+          pButton
+          type="button"
+          icon="pi pi-refresh"
+          label="Refresh"
+          class="p-button-sm"
+          (click)="refresh()"
+          [disabled]="loading">
+        </button>
+        <a pButton class="p-button-outlined p-button-sm" routerLink="/finance/manage">Open Finance Workspace</a>
+      </div>
+      <p class="error-message" *ngIf="errorMessage">{{ errorMessage }}</p>
+    </div>
+
+    <div class="hero-status">
+      <div class="status-tile">
+        <span>Total Budget</span>
+        <strong>{{ globalStats.totalBudget | currency:'USD':'symbol':'1.0-0' }}</strong>
+      </div>
+      <div class="status-tile">
+        <span>Total Expenses</span>
+        <strong>{{ globalStats.totalExpenses | currency:'USD':'symbol':'1.0-0' }}</strong>
+      </div>
+      <div class="status-tile" [class.status-alert]="globalStats.remainingBudget < 0">
+        <span>Remaining Budget</span>
+        <strong>{{ globalStats.remainingBudget | currency:'USD':'symbol':'1.0-0' }}</strong>
+      </div>
+      <div class="status-tile">
+        <span>% Spent</span>
+        <strong>{{ globalStats.spentPercentage | number:'1.0-2' }}%</strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="overview-grid">
+    <article class="panel panel-chart">
+      <div class="panel-header">
+        <div>
+          <h2>Monthly expenses</h2>
+          <span>Grouped by month for your visible projects</span>
+        </div>
+      </div>
+      <div class="chart-shell" *ngIf="globalStats.monthlyExpenses.length; else noGlobalTrend">
+        <p-chart type="line" [data]="lineChartData" [options]="lineChartOptions"></p-chart>
+      </div>
+    </article>
+
+    <article class="panel panel-chart">
+      <div class="panel-header">
+        <div>
+          <h2>Budget distribution</h2>
+          <span>Allocated budget by project</span>
+        </div>
+      </div>
+      <div class="chart-shell chart-shell-pie" *ngIf="projects.length; else noProjects">
+        <p-chart type="pie" [data]="pieChartData" [options]="pieChartOptions"></p-chart>
+      </div>
+    </article>
+  </section>
+
+  <section class="content-grid">
+    <article class="panel panel-table">
+      <div class="panel-header">
+        <div>
+          <h2>Project risk board</h2>
+          <span>{{ projects.length }} project(s)</span>
+        </div>
+      </div>
+
+      <div class="table-wrap" *ngIf="projects.length; else noProjects">
+        <table>
+          <thead>
+            <tr>
+              <th>Project</th>
+              <th>Budget vs expenses</th>
+              <th>Remaining</th>
+              <th>Spent</th>
+              <th>Risk</th>
+              <th>AI suggestions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let project of projects; trackBy: trackByProject">
+              <td>
+                <strong>{{ project.projectName }}</strong>
+                <p>{{ project.overspending ? 'Overspending detected' : 'Within current allocation' }}</p>
+              </td>
+              <td>
+                <strong>{{ project.budget | currency:'USD':'symbol':'1.0-0' }}</strong>
+                <p>{{ project.expenses | currency:'USD':'symbol':'1.0-0' }}</p>
+              </td>
+              <td [class.negative]="project.remainingBudget < 0">
+                {{ project.remainingBudget | currency:'USD':'symbol':'1.0-0' }}
+              </td>
+              <td>
+                <p-progressBar
+                  [value]="project.spentPercentage"
+                  [showValue]="true"
+                  [styleClass]="progressSeverity(project.spentPercentage)">
+                </p-progressBar>
+              </td>
+              <td>
+                <div class="risk-stack">
+                  <span class="ai-chip">AI</span>
+                  <span [class]="riskBadgeClass(project.riskLevel)">
+                    {{ riskDot(project.riskLevel) }} {{ project.riskLevel }} {{ project.riskScore }}/100
+                  </span>
+                </div>
+              </td>
+              <td>
+                <ul class="insight-list">
+                  <li *ngFor="let insight of project.insights | slice:0:2">{{ insight }}</li>
+                </ul>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </section>
+</section>
+
+<ng-template #noProjects>
+  <div class="empty-state">No finance projects are available for this account.</div>
+</ng-template>
+
+<ng-template #noGlobalTrend>
+  <div class="empty-state">No monthly expense history is available yet.</div>
+</ng-template>

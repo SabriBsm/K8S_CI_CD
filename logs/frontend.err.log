@@ -1,0 +1,136 @@
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'getEmployees' does not exist on type 'TaskService'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/tasks/tasks.component.ts:180:21:
+[37m      180 │     this.taskService.[32mgetEmployees[37m().subscribe({
+          ╵                      [32m~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS7006: Parameter 'users' implicitly has an 'any' type.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/tasks/tasks.component.ts:181:13:
+[37m      181 │       next: ([32musers[37m) => {
+          ╵              [32m~~~~~[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'employees' does not exist on type 'TasksComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/tasks/tasks.component.html:288:23:
+[37m      288 │             [options]="[32memployees[37m"
+          ╵                        [32m~~~~~~~~~[0m
+
+  Error occurs in the template of component TasksComponent.
+
+    src/app/features/tasks/tasks.component.ts:21:15:
+[37m      21 │   templateUrl: [32m'./tasks.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'employees' does not exist on type 'TasksComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/tasks/tasks.component.html:307:21:
+[37m      307 │           [options]="[32memployees[37m"
+          ╵                      [32m~~~~~~~~~[0m
+
+  Error occurs in the template of component TasksComponent.
+
+    src/app/features/tasks/tasks.component.ts:21:15:
+[37m      21 │   templateUrl: [32m'./tasks.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'employees' does not exist on type 'TasksComponent'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/tasks/tasks.component.html:342:21:
+[37m      342 │           [options]="[32memployees[37m"
+          ╵                      [32m~~~~~~~~~[0m
+
+  Error occurs in the template of component TasksComponent.
+
+    src/app/features/tasks/tasks.component.ts:21:15:
+[37m      21 │   templateUrl: [32m'./tasks.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'isTeamMember' does not exist on type 'RoleHelperService'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/tasks/tasks.component.ts:146:32:
+[37m      146 │ ...| this.roleHelperService.[32misTeamMember[37m(this.role ?? this.curren...
+          ╵                             [32m~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'isTeamMember' does not exist on type 'RoleHelperService'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/tasks/tasks.component.ts:400:34:
+[37m      400 │ ...n this.roleHelperService.[32misTeamMember[37m(this.role ?? this.curren...
+          ╵                             [32m~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'isTeamMember' does not exist on type 'RoleHelperService'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/tasks/tasks.component.ts:610:31:
+[37m      610 │ ... (this.roleHelperService.[32misTeamMember[37m(this.role ?? this.curren...
+          ╵                             [32m~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG9: Property 'isTeamMember' does not exist on type 'RoleHelperService'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/tasks/tasks.component.html:163:62:
+[37m      163 │ ...*ngIf="roleHelperService.[32misTeamMember[37m(role ?? currentUser?.rol...
+          ╵                             [32m~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component TasksComponent.
+
+    src/app/features/tasks/tasks.component.ts:21:15:
+[37m      21 │   templateUrl: [32m'./tasks.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'isTeamMember' does not exist on type 'RoleHelperService'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/tasks/tasks.component.ts:146:32:
+[37m      146 │ ...| this.roleHelperService.[32misTeamMember[37m(this.role ?? this.curren...
+          ╵                             [32m~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'isTeamMember' does not exist on type 'RoleHelperService'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/tasks/tasks.component.ts:400:34:
+[37m      400 │ ...n this.roleHelperService.[32misTeamMember[37m(this.role ?? this.curren...
+          ╵                             [32m~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'isTeamMember' does not exist on type 'RoleHelperService'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/tasks/tasks.component.ts:610:31:
+[37m      610 │ ... (this.roleHelperService.[32misTeamMember[37m(this.role ?? this.curren...
+          ╵                             [32m~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2740: Type '{ ADMIN: string; PROJECT_MANAGER: string; PROJECT_MEMBER: string; CUSTOMER: string; }' is missing the following properties from type 'Record<UserRole, string>': MANAGER, TEAM_MEMBER, CLIENT, ROLE_MANAGER, and 2 more.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/users/user-list/user-list.component.ts:166:10:
+[37m      166 │     const [32mmap[37m: Record<UserRole, string> = {
+          ╵           [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2740: Type '{ ADMIN: string; PROJECT_MANAGER: string; PROJECT_MEMBER: string; CUSTOMER: string; }' is missing the following properties from type 'Record<UserRole, string>': MANAGER, TEAM_MEMBER, CLIENT, ROLE_MANAGER, and 2 more.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/users/user-list/user-list.component.ts:177:10:
+[37m      177 │     const [32mmap[37m: Record<UserRole, string> = {
+          ╵           [32m~~~[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2740: Type '{ ADMIN: string; PROJECT_MANAGER: string; PROJECT_MEMBER: string; CUSTOMER: string; }' is missing the following properties from type 'Record<UserRole, string>': MANAGER, TEAM_MEMBER, CLIENT, ROLE_MANAGER, and 2 more.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/users/user-list/user-list.component.ts:166:10:
+[37m      166 │     const [32mmap[37m: Record<UserRole, string> = {
+          ╵           [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2740: Type '{ ADMIN: string; PROJECT_MANAGER: string; PROJECT_MEMBER: string; CUSTOMER: string; }' is missing the following properties from type 'Record<UserRole, string>': MANAGER, TEAM_MEMBER, CLIENT, ROLE_MANAGER, and 2 more.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/users/user-list/user-list.component.ts:177:10:
+[37m      177 │     const [32mmap[37m: Record<UserRole, string> = {
+          ╵           [32m~~~[0m
+
+[39m[22m

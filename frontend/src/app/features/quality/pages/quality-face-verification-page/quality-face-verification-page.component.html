@@ -1,0 +1,207 @@
+<div class="quality-face-verification-page">
+  <div class="section-header">
+    <div>
+      <h3>Audit Identity Verification</h3>
+      <p>Verify the auditor identity before the audit execution workspace can be opened.</p>
+    </div>
+  </div>
+
+  <div class="privacy-note">
+    <i class="pi pi-shield"></i>
+    <span>For demo purposes, face descriptors are stored for audit identity verification. Raw webcam images are not stored.</span>
+  </div>
+
+  <div class="audit-summary-card ps-page-card">
+    <div>
+      <div class="summary-label">Selected Audit</div>
+      <h4>{{ selectedAudit?.title || 'Choose an audit to verify' }}</h4>
+      <p>
+        {{ selectedAudit?.project?.name || 'No project selected' }}
+        <span *ngIf="selectedAudit"> - {{ selectedAudit.auditType }} audit - {{ selectedAudit.status.split('_').join(' ') }}</span>
+      </p>
+    </div>
+    <p-dropdown
+      [options]="audits"
+      [(ngModel)]="selectedAuditId"
+      optionLabel="title"
+      optionValue="id"
+      placeholder="Select audit"
+      styleClass="audit-selector"
+      [showClear]="true"
+      (onChange)="onAuditChange()">
+    </p-dropdown>
+  </div>
+
+  <div class="verification-layout">
+    <div class="ps-page-card camera-card">
+      <div class="card-header-bar">
+        <h4>Webcam Verification</h4>
+        <span class="status-pill" [class.status-ready]="modelsLoaded">{{ modelsLoaded ? 'Models ready' : 'Models loading' }}</span>
+      </div>
+
+      <div class="video-frame">
+        <video #videoElement autoplay playsinline></video>
+        <div class="video-placeholder" *ngIf="!cameraActive">
+          <i class="pi pi-camera"></i>
+          <span>Camera preview</span>
+        </div>
+      </div>
+
+      <div class="detection-status">
+        <i class="pi pi-circle-fill"></i>
+        <span>{{ detectionStatus }}</span>
+      </div>
+
+      <div class="camera-actions">
+        <button
+          pButton
+          pRipple
+          type="button"
+          label="Open Webcam"
+          icon="pi pi-camera"
+          class="p-button-outlined"
+          [loading]="cameraLoading"
+          (click)="startCamera()">
+        </button>
+        <button
+          pButton
+          pRipple
+          type="button"
+          label="Stop"
+          icon="pi pi-times"
+          class="p-button-text"
+          [disabled]="!cameraActive"
+          (click)="stopCamera()">
+        </button>
+      </div>
+    </div>
+
+    <div class="ps-page-card workflow-card">
+      <div class="card-header-bar">
+        <h4>Verify Auditor</h4>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-row">
+          <label for="verify-user-id">User ID</label>
+          <input
+            id="verify-user-id"
+            pInputText
+            type="number"
+            [(ngModel)]="userId"
+            (blur)="loadProfileStatus()"
+            placeholder="Example: 6" />
+        </div>
+
+        <div class="profile-warning" *ngIf="noFaceProfileFound">
+          <i class="pi pi-exclamation-triangle"></i>
+          <div>
+            <strong>No face profile found.</strong>
+            <span>Please set up your face profile first.</span>
+          </div>
+          <button
+            pButton
+            pRipple
+            type="button"
+            label="Go to Face Profile Setup"
+            icon="pi pi-arrow-right"
+            class="p-button-sm p-button-outlined"
+            (click)="goToProfileSetup()">
+          </button>
+        </div>
+
+        <div class="profile-state" *ngIf="profileStatus?.hasProfile">
+          <span class="badge badge-active">Face profile registered</span>
+          <span class="item-meta" *ngIf="profileStatus?.updatedAt">Updated {{ profileStatus?.updatedAt | date:'medium' }}</span>
+        </div>
+
+        <button
+          pButton
+          pRipple
+          type="button"
+          label="Verify Identity"
+          icon="pi pi-verified"
+          [loading]="verifying"
+          [disabled]="verifying || !cameraActive || !selectedAuditId"
+          (click)="verifyAuditStart()">
+        </button>
+
+        <div class="verification-result" *ngIf="verifyResult" [ngClass]="getResultClass(verifyResult.verified)">
+          <div class="result-main">
+            <i [class]="verifyResult.verified ? 'pi pi-check-circle' : 'pi pi-times-circle'"></i>
+            <strong>{{ verifyResult.verified ? 'Verified' : 'Failed' }}</strong>
+          </div>
+          <div>{{ verifyResult.message }}</div>
+          <div class="result-metrics">
+            <span>Distance: {{ formatDistance(verifyResult.distanceScore) }}</span>
+            <span>Threshold: {{ verifyResult.threshold }}</span>
+          </div>
+        </div>
+
+        <button
+          pButton
+          pRipple
+          type="button"
+          label="Start Audit"
+          icon="pi pi-play"
+          [loading]="startingAudit"
+          [disabled]="startingAudit || !verifyResult?.verified"
+          (click)="startAudit()">
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="ps-page-card">
+    <div class="card-header-bar">
+      <h4>Recent Verification Logs</h4>
+      <button
+        pButton
+        pRipple
+        type="button"
+        label="Refresh"
+        icon="pi pi-refresh"
+        class="p-button-text p-button-sm"
+        [disabled]="!selectedAuditId"
+        (click)="loadLogs()">
+      </button>
+    </div>
+
+    <p-table [value]="logs" [loading]="logsLoading" [rowHover]="true" responsiveLayout="scroll" styleClass="p-datatable-sm">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>User</th>
+          <th>Result</th>
+          <th>Distance</th>
+          <th>Threshold</th>
+          <th>Date</th>
+          <th>Failure Reason</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-log>
+        <tr>
+          <td>{{ log.userId }}</td>
+          <td>
+            <span class="badge" [ngClass]="log.verified ? 'badge-active' : 'badge-suspended'">
+              {{ log.verified ? 'Verified' : 'Failed' }}
+            </span>
+          </td>
+          <td>{{ formatDistance(log.distanceScore) }}</td>
+          <td>{{ log.thresholdUsed }}</td>
+          <td>{{ log.verifiedAt | date:'medium' }}</td>
+          <td>{{ log.failureReason || '-' }}</td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6">
+            <div class="empty-state-row">
+              <i class="pi pi-history"></i>
+              <span>No verification logs for the selected audit</span>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>

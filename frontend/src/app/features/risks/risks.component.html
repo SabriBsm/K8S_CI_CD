@@ -1,0 +1,603 @@
+<div class="risks-page">
+  <div class="ps-page-header">
+    <div class="header-title">
+      <h2>Risk Management</h2>
+      <p>Track project risks and manage mitigation plans end-to-end.</p>
+    </div>
+    <div class="header-actions">
+      <button pButton pRipple icon="pi pi-chart-line" label="Statistics" class="p-button-sm p-button-secondary" (click)="openStatisticsPage()"></button>
+      <button
+        pButton
+        pRipple
+        icon="pi pi-file-pdf"
+        label="Download PDF"
+        class="p-button-sm p-button-help"
+        [disabled]="!selectedRisk"
+        (click)="downloadSelectedRiskPdf()">
+      </button>
+      <button *ngIf="canAddRisk()" pButton pRipple icon="pi pi-plus" label="Add Risk" class="p-button-sm" (click)="openNewRisk()"></button>
+    </div>
+  </div>
+
+  <div class="management-tabs">
+    <button
+      pButton
+      pRipple
+      type="button"
+      class="p-button-sm"
+      [outlined]="activeManagementTab !== 'RISKS'"
+      [severity]="activeManagementTab === 'RISKS' ? 'primary' : 'secondary'"
+      (click)="switchManagementTab('RISKS')">
+      <i class="pi pi-shield"></i>
+      <span>Risks</span>
+    </button>
+
+    <button
+      pButton
+      pRipple
+      type="button"
+      class="p-button-sm"
+      [outlined]="activeManagementTab !== 'MITIGATIONS'"
+      [severity]="activeManagementTab === 'MITIGATIONS' ? 'primary' : 'secondary'"
+      (click)="switchManagementTab('MITIGATIONS')">
+      <i class="pi pi-sitemap"></i>
+      <span>Mitigation Plans</span>
+    </button>
+
+    <button
+      pButton
+      pRipple
+      type="button"
+      class="p-button-sm"
+      [outlined]="activeManagementTab !== 'AUTOMATION'"
+      [severity]="activeManagementTab === 'AUTOMATION' ? 'primary' : 'secondary'"
+      (click)="switchManagementTab('AUTOMATION')">
+      <i class="pi pi-bell"></i>
+      <span>Automation</span>
+    </button>
+  </div>
+
+  <div class="ps-page-card" *ngIf="activeManagementTab === 'RISKS'">
+    <div class="table-toolbar">
+      <span class="p-input-icon-left">
+        <i class="pi pi-search"></i>
+        <input
+          pInputText
+          type="text"
+          placeholder="Search risks..."
+          class="search-input"
+          [value]="searchTerm"
+          (input)="onSearch($event)" />
+      </span>
+      <div class="toolbar-right">
+        <button pButton icon="pi pi-filter-slash" label="Reset" class="p-button-text p-button-sm" (click)="resetFilters()"></button>
+        <span class="total-label">{{ totalFilteredRisks }} risks</span>
+        <button pButton icon="pi pi-refresh" class="p-button-text p-button-sm" pTooltip="Refresh" (click)="loadRisks()"></button>
+      </div>
+
+    <div class="status-filters">
+      <button pButton class="p-button-sm" [outlined]="!isFilterActive('ALL')" [severity]="isFilterActive('ALL') ? 'secondary' : 'secondary'" label="All" (click)="setStatusFilter('ALL')"></button>
+      <button pButton class="p-button-sm" [outlined]="!isFilterActive('OPEN')" label="Open" (click)="setStatusFilter('OPEN')"></button>
+      <button pButton class="p-button-sm" [outlined]="!isFilterActive('IN_PROGRESS')" severity="info" label="In Progress" (click)="setStatusFilter('IN_PROGRESS')"></button>
+      <button pButton class="p-button-sm" [outlined]="!isFilterActive('MITIGATED')" severity="success" label="Mitigated" (click)="setStatusFilter('MITIGATED')"></button>
+      <button pButton class="p-button-sm" [outlined]="!isFilterActive('CLOSED')" severity="contrast" label="Closed" (click)="setStatusFilter('CLOSED')"></button>
+    </div>
+    </div>
+
+    <div class="risk-cards-grid" *ngIf="!loading && pagedRisks.length; else emptyRiskCardsTpl">
+      <article
+        class="risk-card"
+        *ngFor="let risk of pagedRisks"
+        [ngClass]="getRiskStatusClass(risk.status)"
+        [class.selected]="selectedRisk?.id === risk.id"
+        (click)="selectRisk(risk)">
+        <div class="risk-card-top">
+          <h4>{{ risk.title }}</h4>
+          <div class="risk-status-pills">
+            <span class="badge" [ngClass]="getRiskStatusClass(risk.status)">{{ risk.status }}</span>
+          </div>
+        </div>
+
+        <p class="risk-card-desc">{{ risk.description }}</p>
+
+        <div class="risk-card-meta">
+          <span><strong>Category:</strong> {{ risk.category }}</span>
+          <span><strong>Probability:</strong> {{ risk.probability }}</span>
+          <span><strong>Impact:</strong> {{ risk.impact }}</span>
+          <span class="sla-chip" [ngClass]="{
+            'sla-overdue': isRiskSlaOverdue(risk),
+            'sla-soon': isRiskSlaDueSoon(risk)
+          }">
+            <strong>SLA:</strong>
+            {{ risk.slaDueDate ? (risk.slaDueDate | date:'MMM d, y') : 'Not set' }}
+          </span>
+          <span><strong>Mitigations:</strong> {{ risk.mitigationPlans?.length ?? 0 }}</span>
+        </div>
+
+        <div class="risk-card-actions" (click)="$event.stopPropagation()">
+          <button pButton pRipple icon="pi pi-shield" class="p-button-text p-button-sm" pTooltip="Open details" (click)="openRiskDetails(risk)"></button>
+          <button *ngIf="canEditRisk(risk)" pButton pRipple icon="pi pi-pencil" class="p-button-text p-button-sm p-button-secondary" pTooltip="Edit" (click)="editRisk(risk)"></button>
+          <button *ngIf="canDeleteRisk(risk)" pButton pRipple icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" pTooltip="Delete" (click)="deleteRisk(risk)"></button>
+        </div>
+      </article>
+    </div>
+
+    <p-paginator
+      [first]="first"
+      [rows]="rows"
+      [totalRecords]="totalFilteredRisks"
+      [rowsPerPageOptions]="[6, 8, 12, 16]"
+      [alwaysShow]="true"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Page {currentPage} / {totalPages} ({totalRecords} risks)"
+      (onPageChange)="onRiskPageChange($event)">
+    </p-paginator>
+
+    <ng-template #emptyRiskCardsTpl>
+      <div class="empty-state-row" *ngIf="!loading">
+        <i class="pi pi-exclamation-triangle"></i>
+        <span>No risks found</span>
+      </div>
+    </ng-template>
+  </div>
+
+  <div class="ps-page-card" *ngIf="activeManagementTab === 'AUTOMATION'">
+    <div class="automation-panel">
+      <div class="automation-top">
+        <div>
+          <h3>Automation & Reminders</h3>
+          <p>Configure J-3/J-1 reminders, overdue escalation, and critical alerts.</p>
+        </div>
+        <button
+          pButton
+          pRipple
+          type="button"
+          class="p-button-sm"
+          icon="pi pi-save"
+          label="Save Rules"
+          [loading]="savingAutomationRules"
+          (click)="saveAutomationRules()">
+        </button>
+      </div>
+
+      <div class="automation-kpis">
+        <article class="auto-kpi">
+          <span>Due in 3 days</span>
+          <strong>{{ alertsSummary.dueIn3Days }}</strong>
+        </article>
+        <article class="auto-kpi">
+          <span>Due in 1 day</span>
+          <strong>{{ alertsSummary.dueIn1Day }}</strong>
+        </article>
+        <article class="auto-kpi warn">
+          <span>Overdue</span>
+          <strong>{{ alertsSummary.overdue }}</strong>
+        </article>
+        <article class="auto-kpi danger">
+          <span>Critical Open</span>
+          <strong>{{ alertsSummary.criticalOpen }}</strong>
+        </article>
+      </div>
+
+      <div class="rules-grid" *ngIf="notificationRules.length">
+        <article class="rule-card" *ngFor="let rule of notificationRules">
+          <div class="rule-head">
+            <h4>{{ rule.label }}</h4>
+            <label class="switch-line">
+              <input type="checkbox" [(ngModel)]="rule.enabled" [ngModelOptions]="{ standalone: true }" />
+              <span>Enabled</span>
+            </label>
+          </div>
+
+          <div class="rule-fields">
+            <label>
+              Days before
+              <input type="number" min="0" [(ngModel)]="rule.daysBefore" [ngModelOptions]="{ standalone: true }" />
+            </label>
+            <label>
+              Severity
+              <select [(ngModel)]="rule.severity" [ngModelOptions]="{ standalone: true }">
+                <option value="MEDIUM">MEDIUM</option>
+                <option value="HIGH">HIGH</option>
+                <option value="CRITICAL">CRITICAL</option>
+              </select>
+            </label>
+            <label class="switch-line">
+              <input type="checkbox" [(ngModel)]="rule.escalate" [ngModelOptions]="{ standalone: true }" />
+              <span>Escalate</span>
+            </label>
+          </div>
+
+          <div class="channels-line">
+            <span>Channels:</span>
+            <label>
+              <input
+                type="checkbox"
+                [checked]="hasRuleChannel(rule, 'EMAIL')"
+                (change)="toggleRuleChannel(rule, 'EMAIL', $any($event.target).checked)" />
+              Email
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                [checked]="hasRuleChannel(rule, 'IN_APP')"
+                (change)="toggleRuleChannel(rule, 'IN_APP', $any($event.target).checked)" />
+              In-App
+            </label>
+          </div>
+        </article>
+      </div>
+    </div>
+  </div>
+
+  <div class="ps-page-card mitigation-board" *ngIf="activeManagementTab === 'MITIGATIONS'">
+    <div class="mitigation-header">
+      <div class="mitigation-heading-copy">
+        <span class="mitigation-eyebrow">Mitigation Board</span>
+        <h3>Mitigation Plans</h3>
+        <p *ngIf="selectedRisk">For risk: <strong>{{ selectedRisk.title }}</strong></p>
+        <p *ngIf="!selectedRisk">Select a risk to manage mitigation plans.</p>
+      </div>
+      <div class="mitigation-actions">
+        <span class="mitigation-counter" *ngIf="selectedRisk">{{ selectedRiskMitigationCount }} plans</span>
+        <button pButton pRipple icon="pi pi-link" label="Link Existing" class="p-button-sm p-button-secondary" [disabled]="!selectedRisk" (click)="openAssignMitigationDialog()"></button>
+        <button pButton pRipple icon="pi pi-plus" label="Add Plan" class="p-button-sm" [disabled]="!selectedRisk" (click)="openNewMitigation()"></button>
+      </div>
+    </div>
+
+    <ng-container *ngIf="selectedRisk; else noRiskSelected">
+      <div class="mitigation-cards-grid" *ngIf="pagedSelectedRiskMitigations.length; else noMitigationTpl">
+        <article class="mitigation-plan-card" *ngFor="let mitigation of pagedSelectedRiskMitigations" [ngClass]="getMitigationStatusClass(mitigation.status)">
+          <div class="mitigation-plan-top">
+            <div>
+              <p class="plan-prefix">Mitigation Plan</p>
+              <h4>{{ mitigation.action }}</h4>
+            </div>
+            <span class="badge" [ngClass]="getMitigationStatusClass(mitigation.status)">{{ mitigation.status }}</span>
+          </div>
+
+          <div class="mitigation-plan-meta modern">
+            <div class="meta-stat">
+              <span>Due Date</span>
+              <strong>{{ mitigation.dueDate ? (mitigation.dueDate | date:'MMM d, y') : 'Not defined' }}</strong>
+            </div>
+            <div class="meta-stat">
+              <span>Schedule</span>
+              <strong
+                class="state-value"
+                [ngClass]="{
+                  'is-overdue': isMitigationOverdue(mitigation.dueDate),
+                  'is-soon': isMitigationDueSoon(mitigation.dueDate)
+                }">
+                {{ isMitigationOverdue(mitigation.dueDate) ? 'Overdue' : (isMitigationDueSoon(mitigation.dueDate) ? 'Due soon' : 'On track') }}
+              </strong>
+            </div>
+            <div class="meta-stat">
+              <span>Estimated Cost</span>
+              <strong>{{ mitigation.cost !== null && mitigation.cost !== undefined ? (mitigation.cost | currency) : 'Not set' }}</strong>
+            </div>
+          </div>
+
+          <div class="mitigation-main-grid">
+            <div class="mitigation-it-detection" *ngIf="getMitigationITProfile(mitigation) as itProfile">
+              <div class="it-detect-top">
+                <span class="it-detect-title">
+                  <i class="pi pi-cog"></i>
+                  IT Detection
+                </span>
+                <span class="it-priority-pill" [ngClass]="getITPriorityClass(itProfile.priority)">
+                  {{ itProfile.priority }}
+                </span>
+              </div>
+
+              <div class="it-detect-meta">
+                <span><i class="pi pi-sitemap"></i> {{ itProfile.category }}</span>
+                <span><i class="pi pi-user"></i> {{ itProfile.owner }}</span>
+                <span><i class="pi pi-bolt"></i> Signal: {{ itProfile.signal }}</span>
+                <span><i class="pi pi-info-circle"></i> {{ itProfile.reason }}</span>
+              </div>
+
+              <ul class="it-action-list">
+                <li *ngFor="let actionItem of itProfile.actions">{{ actionItem }}</li>
+              </ul>
+            </div>
+
+            <aside class="mitigation-details-block">
+              <div class="mitigation-qr-wrap">
+                <span class="qr-title">Crisis Checklist QR</span>
+                <small>Scan to open the mitigation checklist</small>
+                <img
+                  [src]="getMitigationQrCodeUrl(mitigation)"
+                  [alt]="'Mitigation QR ' + mitigation.id"
+                  loading="lazy"
+                  width="120"
+                  height="120" />
+              </div>
+            </aside>
+          </div>
+
+          <div class="mitigation-card-actions">
+            <button pButton pRipple icon="pi pi-unlink" label="Unlink" class="p-button-outlined p-button-sm p-button-warning" (click)="unassignMitigation(mitigation)"></button>
+            <button pButton pRipple icon="pi pi-pencil" label="Edit" class="p-button-outlined p-button-sm p-button-secondary" (click)="editMitigation(mitigation)"></button>
+            <button pButton pRipple icon="pi pi-trash" label="Delete" class="p-button-sm p-button-danger" (click)="deleteMitigation(mitigation)"></button>
+          </div>
+        </article>
+      </div>
+
+      <p-paginator
+        [first]="mitigationFirst"
+        [rows]="mitigationRows"
+        [totalRecords]="selectedRiskMitigationCount"
+        [rowsPerPageOptions]="[4, 6, 8, 12]"
+        (onPageChange)="onMitigationPageChange($event)">
+      </p-paginator>
+
+      <ng-template #noMitigationTpl>
+        <div class="empty-state-row compact">
+          <i class="pi pi-shield"></i>
+          <span>No mitigation plans yet for this risk.</span>
+        </div>
+      </ng-template>
+    </ng-container>
+  </div>
+
+  <ng-template #noRiskSelected>
+    <div class="empty-risk-selection">
+      <i class="pi pi-arrow-up"></i>
+      <span>Select a risk from the table above to manage its mitigation plans.</span>
+      <button
+        pButton
+        pRipple
+        type="button"
+        class="p-button-sm p-button-outlined"
+        icon="pi pi-arrow-left"
+        label="Go to Risks"
+        (click)="switchManagementTab('RISKS')">
+      </button>
+    </div>
+  </ng-template>
+
+  <button class="chat-fab" type="button" (click)="toggleChat()" pTooltip="Open chatbot">
+    <i class="pi pi-comments"></i>
+  </button>
+
+  <div class="chat-panel" *ngIf="chatOpen">
+    <div class="chat-header">
+      <div class="chat-title-wrap">
+        <span class="chat-avatar"><i class="pi pi-comments"></i></span>
+        <div>
+          <strong>Risk Assistant</strong>
+          <small>Professional risk guidance</small>
+        </div>
+      </div>
+      <button type="button" class="chat-close" (click)="toggleChat()">x</button>
+    </div>
+    <div class="chat-body">
+      <div class="chat-scope" *ngIf="selectedRisk; else generalScope">Context: {{ selectedRisk.title }}</div>
+      <ng-template #generalScope>
+        <div class="chat-scope">Context: General risk management</div>
+      </ng-template>
+
+      <div class="chat-quick-prompts">
+        <button type="button" class="quick-chip" (click)="applyQuickPrompt('Quels sont les 3 risques prioritaires ici ?')">Top priorities</button>
+        <button type="button" class="quick-chip" (click)="applyQuickPrompt('Propose un plan de mitigation concret')">Mitigation plan</button>
+        <button type="button" class="quick-chip" (click)="applyQuickPrompt('Que dois-je faire cette semaine ?')">This week actions</button>
+      </div>
+
+      <div class="chat-messages">
+        <div class="message-row" *ngFor="let msg of chatMessages" [ngClass]="msg.sender">
+          <div class="message-bubble">
+            <p>{{ msg.text }}</p>
+            <small>{{ msg.time }}</small>
+          </div>
+        </div>
+        <div class="message-row bot" *ngIf="chatbotLoading">
+          <div class="message-bubble typing">
+            <p>Typing...</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-composer">
+        <input
+          pInputText
+          class="w-full"
+          placeholder="Ecrivez votre question..."
+          [(ngModel)]="chatbotQuestion"
+          [ngModelOptions]="{ standalone: true }"
+          (keyup.enter)="askRiskChatbot()" />
+        <button pButton pRipple icon="pi pi-send" class="p-button-sm" [loading]="chatbotLoading" (click)="askRiskChatbot()"></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p-dialog
+  [header]="riskEditMode ? 'Edit Risk' : 'Add New Risk'"
+  [(visible)]="showRiskDialog"
+  [style]="{ width: '640px' }"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false">
+
+  <form [formGroup]="riskForm" (ngSubmit)="saveRisk()">
+        <div class="form-field">
+          <label>Detected by <span class="req">*</span></label>
+          <input pInputText [value]="(currentUser?.firstName && currentUser?.lastName) ? (currentUser?.firstName + ' ' + currentUser?.lastName) : ''" class="w-full" readonly [ngClass]="{'ng-invalid': !(currentUser?.firstName && currentUser?.lastName)}" />
+          <small *ngIf="!(currentUser?.firstName && currentUser?.lastName)" class="field-error">Le responsable du risque est obligatoire.</small>
+        </div>
+    <div class="form-field">
+      <label>Title <span class="req">*</span></label>
+      <div class="title-row">
+        <input pInputText formControlName="title" class="w-full" placeholder="e.g. Infrastructure instability" />
+        <button
+          type="button"
+          pButton
+          pRipple
+          icon="pi pi-sparkles"
+          label="Suggest"
+          class="p-button-sm p-button-outlined"
+          [loading]="aiSuggestionLoading"
+          (click)="suggestRiskDescription()">
+        </button>
+      </div>
+      <small *ngIf="isRiskFieldInvalid('title')" class="field-error">{{ getRiskTitleError() }}</small>
+    </div>
+
+    <div class="ai-suggestion-card" *ngIf="showAiSuggestion">
+      <div class="ai-suggestion-header">
+        <span class="ai-badge">AI Suggestion</span>
+        <span class="ai-subtitle">Review before applying</span>
+      </div>
+      <p class="ai-description">{{ aiDescriptionSuggestion }}</p>
+      <div class="ai-steps" *ngIf="aiStepsSuggestion.length">
+        <h5>Suggested Steps</h5>
+        <ul>
+          <li *ngFor="let step of aiStepsSuggestion">{{ step }}</li>
+        </ul>
+      </div>
+      <div class="ai-actions">
+        <button type="button" pButton pRipple label="Ignore" class="p-button-text p-button-sm" (click)="dismissAiSuggestion()"></button>
+        <button type="button" pButton pRipple label="Apply" icon="pi pi-check" class="p-button-sm" (click)="applyAiSuggestion()"></button>
+      </div>
+    </div>
+
+    <div class="form-field">
+      <label>Description <span class="req">*</span></label>
+      <textarea pInputTextarea formControlName="description" class="w-full" rows="3" placeholder="Describe the risk and context"></textarea>
+      <small *ngIf="isRiskFieldInvalid('description')" class="field-error">Description is required (min 8 chars).</small>
+    </div>
+
+    <div class="form-field">
+      <label>Project</label>
+      <p-dropdown
+        formControlName="projectId"
+        [options]="projectOptions"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Select project by name"
+        [showClear]="true"
+        [filter]="true"
+        filterBy="label"
+        [loading]="projectLoading"
+        styleClass="w-full"
+        appendTo="body"
+        scrollHeight="260px">
+      </p-dropdown>
+    </div>
+
+    <div class="field-row-3">
+      <div class="form-field">
+        <label>SLA Due Date <span class="req">*</span></label>
+        <input type="date" pInputText formControlName="slaDueDate" class="w-full" (change)="onRiskGovernanceChanged()" />
+        <small *ngIf="isRiskFieldInvalid('slaDueDate')" class="field-error">{{ getRiskSlaError() }}</small>
+      </div>
+    </div>
+
+    <div class="field-row-3">
+      <div class="form-field">
+        <label>Category <span class="req">*</span></label>
+        <p-dropdown formControlName="category" [options]="riskCategoryOptions" optionLabel="label" optionValue="value" styleClass="w-full" appendTo="body" scrollHeight="260px"></p-dropdown>
+      </div>
+      <div class="form-field">
+        <label>Probability <span class="req">*</span></label>
+        <p-dropdown formControlName="probability" [options]="probabilityOptions" optionLabel="label" optionValue="value" styleClass="w-full" appendTo="body" scrollHeight="260px" (onChange)="onRiskGovernanceChanged()"></p-dropdown>
+      </div>
+      <div class="form-field">
+        <label>Impact <span class="req">*</span></label>
+        <p-dropdown formControlName="impact" [options]="impactOptions" optionLabel="label" optionValue="value" styleClass="w-full" appendTo="body" scrollHeight="260px" (onChange)="onRiskGovernanceChanged()"></p-dropdown>
+      </div>
+      <div class="form-field">
+        <label>Status <span class="req">*</span></label>
+        <p-dropdown formControlName="status" [options]="riskStatusOptions" optionLabel="label" optionValue="value" styleClass="w-full" appendTo="body" scrollHeight="260px" (onChange)="onRiskGovernanceChanged()"></p-dropdown>
+      </div>
+    </div>
+  </form>
+
+  <ng-template pTemplate="footer">
+    <button pButton pRipple label="Cancel" icon="pi pi-times" class="p-button-text p-button-sm" (click)="showRiskDialog = false"></button>
+    <button pButton pRipple [label]="riskEditMode ? 'Save Changes' : 'Create Risk'" icon="pi pi-check" class="p-button-sm" (click)="saveRisk()" [disabled]="!(currentUser?.firstName && currentUser?.lastName)"></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [header]="mitigationEditMode ? 'Edit Mitigation Plan' : 'Add Mitigation Plan'"
+  [(visible)]="showMitigationDialog"
+  [style]="{ width: '560px' }"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false">
+
+  <form [formGroup]="mitigationForm" (ngSubmit)="saveMitigation()">
+    <div class="form-field">
+      <label>Action <span class="req">*</span></label>
+      <input pInputText formControlName="action" class="w-full" placeholder="Mitigation action" />
+      <small *ngIf="isMitigationFieldInvalid('action')" class="field-error">Action is required (min 3 chars).</small>
+    </div>
+
+    <div class="field-row-3">
+      <div class="form-field">
+        <label>Status <span class="req">*</span></label>
+        <p-dropdown
+          formControlName="status"
+          [options]="mitigationStatusOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Select status"
+          styleClass="w-full"
+          appendTo="body"
+          scrollHeight="260px">
+        </p-dropdown>
+      </div>
+      <div class="form-field">
+        <label>Due Date</label>
+        <input type="date" pInputText formControlName="dueDate" class="w-full" [min]="minMitigationDate" />
+        <small *ngIf="isMitigationFieldInvalid('dueDate')" class="field-error">{{ getMitigationDateError() }}</small>
+      </div>
+      <div class="form-field">
+        <label>Cost</label>
+        <p-inputNumber formControlName="cost" [mode]="'decimal'" [min]="0" [minFractionDigits]="0" [maxFractionDigits]="2" styleClass="w-full"></p-inputNumber>
+        <small *ngIf="isMitigationFieldInvalid('cost')" class="field-error">Cost cannot be negative.</small>
+      </div>
+    </div>
+  </form>
+
+  <ng-template pTemplate="footer">
+    <button pButton pRipple label="Cancel" icon="pi pi-times" class="p-button-text p-button-sm" (click)="showMitigationDialog = false"></button>
+    <button pButton pRipple [label]="mitigationEditMode ? 'Save Changes' : 'Add Plan'" icon="pi pi-check" class="p-button-sm" (click)="saveMitigation()"></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  header="Link Existing Mitigation"
+  [(visible)]="showAssignMitigationDialog"
+  [style]="{ width: '520px' }"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false">
+
+  <div class="form-field">
+    <label>Select Mitigation Plan</label>
+    <p-dropdown
+      [(ngModel)]="selectedUnassignedMitigationId"
+      [ngModelOptions]="{ standalone: true }"
+      [options]="unassignedMitigationOptions"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="Choose a mitigation plan"
+      styleClass="w-full"
+      appendTo="body"
+      scrollHeight="260px">
+    </p-dropdown>
+    <small class="field-error" *ngIf="showAssignMitigationDialog && !unassignedMitigationOptions.length">
+      No available mitigation plans to link.
+    </small>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button pButton pRipple label="Cancel" icon="pi pi-times" class="p-button-text p-button-sm" (click)="showAssignMitigationDialog = false"></button>
+    <button pButton pRipple label="Link" icon="pi pi-link" class="p-button-sm" [loading]="assigningMitigation" [disabled]="!selectedUnassignedMitigationId" (click)="assignSelectedMitigationToRisk()"></button>
+  </ng-template>
+</p-dialog>
+
+<p-confirmDialog key="risksDeleteConfirm" [style]="{ width: '420px' }"></p-confirmDialog>

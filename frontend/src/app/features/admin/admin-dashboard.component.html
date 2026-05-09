@@ -1,0 +1,185 @@
+<section class="admin-dashboard">
+  <div class="stats-grid" *ngIf="!loading; else loadingState">
+    <p-card *ngFor="let stat of stats" styleClass="stat-card">
+      <div class="stat-card-content">
+        <div class="stat-icon" [style.background]="stat.color + '15'">
+          <i [class]="stat.icon" [style.color]="stat.color"></i>
+        </div>
+        <div class="stat-copy">
+          <span>{{ stat.label }}</span>
+          <strong>{{ stat.value }}</strong>
+          <small>{{ stat.note }}</small>
+        </div>
+      </div>
+    </p-card>
+  </div>
+
+  <ng-template #loadingState>
+    <div class="stats-grid">
+      <p-card *ngFor="let _ of stats" styleClass="stat-card">
+        <p-skeleton width="100%" height="4.5rem"></p-skeleton>
+      </p-card>
+    </div>
+  </ng-template>
+
+  <p-card header="Quick actions" styleClass="panel-card quick-actions-card">
+    <div class="quick-actions">
+      <a *ngFor="let action of quickActions" [routerLink]="action.route" class="quick-action" [style.border-color]="action.color">
+        <i [class]="action.icon" [style.color]="action.color"></i>
+        <div>
+          <strong>{{ action.label }}</strong>
+          <small>{{ action.description }}</small>
+        </div>
+      </a>
+      <button pButton type="button" label="Refresh now" icon="pi pi-refresh" class="p-button-sm p-button-secondary refresh-btn"
+              (click)="refreshDashboard()"></button>
+    </div>
+  </p-card>
+
+  <p-card header="Application usage analytics" styleClass="panel-card usage-summary-card">
+    <div class="usage-summary" *ngIf="usageDashboard; else usageSummaryEmpty">
+      <div class="usage-leader">
+        <span class="section-kicker">Global leader</span>
+        <h3>{{ topUser?.displayName || topUser?.username || topUser?.email || 'No usage yet' }}</h3>
+        <p>{{ topUser?.email || 'No usage data recorded yet.' }}</p>
+
+        <div class="leader-metrics" *ngIf="topUser; else noMonthlyData">
+          <div>
+            <strong>{{ topUser.totalMinutes | number:'1.0-0' }}</strong>
+            <small>Minutes</small>
+          </div>
+          <div>
+            <strong>{{ topUser.totalHours | number:'1.0-2' }}</strong>
+            <small>Hours</small>
+          </div>
+          <div>
+            <strong>{{ topUser.totalSeconds | number:'1.0-0' }}</strong>
+            <small>Seconds</small>
+          </div>
+        </div>
+
+        <ng-template #noMonthlyData>
+          <small class="empty-message">No usage data available yet.</small>
+        </ng-template>
+      </div>
+
+      <div class="usage-meta">
+        <div>
+          <span>Scope</span>
+          <strong>{{ usageDashboard.scope }}</strong>
+        </div>
+        <div>
+          <span>Generated at</span>
+          <strong>{{ usageDashboard.generatedAt | date:'MMM d, y, HH:mm' }}</strong>
+        </div>
+        <div>
+          <span>Total users</span>
+          <strong>{{ usageDashboard.totalUsers }}</strong>
+        </div>
+        <div>
+          <span>Total usage</span>
+          <strong>{{ usageDashboard.totalHours | number:'1.0-2' }} h</strong>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #usageSummaryEmpty>
+      <div class="usage-summary-empty">
+        <i class="pi pi-chart-bar"></i>
+        <p>No usage analytics available yet.</p>
+      </div>
+    </ng-template>
+  </p-card>
+
+  <p-card header="Usage chart" styleClass="panel-card usage-chart-card">
+    <div class="usage-chart-toolbar" *ngIf="usageDashboard; else usageChartEmpty">
+      <div class="usage-chart-meta">
+        <span>All-time usage ranking</span>
+        <small>Top users sorted by total minutes spent in the application</small>
+      </div>
+    </div>
+
+    <div class="usage-chart-wrapper" *ngIf="usageDashboard && (usageChartData?.labels?.length ?? 0) > 0; else usageChartEmpty">
+      <p-chart type="bar" [data]="usageChartData" [options]="usageChartOptions" styleClass="usage-chart"></p-chart>
+    </div>
+
+    <ng-template #usageChartEmpty>
+      <div class="usage-summary-empty usage-chart-empty">
+        <i class="pi pi-chart-bar"></i>
+        <p>No chart data available yet.</p>
+      </div>
+    </ng-template>
+  </p-card>
+
+  <p-card header="Usage leaderboard" styleClass="panel-card">
+    <p-table [value]="usageDashboard?.globalRanking?.users ?? []" [paginator]="true" [rows]="10" responsiveLayout="scroll">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>#</th>
+          <th>User</th>
+          <th>Minutes</th>
+          <th>Hours</th>
+          <th>Seconds</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-entry let-rowIndex="rowIndex">
+        <tr>
+          <td>{{ rowIndex + 1 }}</td>
+          <td>
+            <strong>{{ entry.displayName || entry.username || entry.email || 'Unknown user' }}</strong>
+            <small>{{ entry.email }}</small>
+          </td>
+          <td>{{ entry.totalMinutes | number:'1.0-0' }}</td>
+          <td>{{ entry.totalHours | number:'1.0-2' }}</td>
+          <td>{{ entry.totalSeconds | number:'1.0-0' }}</td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5" class="empty-message">No usage data available yet.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </p-card>
+
+  <div class="dashboard-panels">
+    <p-card header="Recent users" styleClass="panel-card">
+      <p-table [value]="recentUsers" [paginator]="true" [rows]="5" responsiveLayout="scroll">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Status</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-user>
+          <tr>
+            <td>{{ user.firstName }} {{ user.lastName }}</td>
+            <td>{{ user.email }}</td>
+            <td><p-tag [value]="getRoleLabel(user.role)" severity="info"></p-tag></td>
+            <td><p-tag [value]="user.status" [severity]="getStatusSeverity(user.status)"></p-tag></td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="4" class="empty-message">No users available.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </p-card>
+
+    <p-card header="User distribution" styleClass="panel-card">
+      <div class="distribution-list">
+        <div class="distribution-item" *ngFor="let stat of stats">
+          <div>
+            <strong>{{ stat.label }}</strong>
+            <small>{{ stat.note }}</small>
+          </div>
+          <span>{{ stat.value }}</span>
+        </div>
+      </div>
+    </p-card>
+  </div>
+</section>
+

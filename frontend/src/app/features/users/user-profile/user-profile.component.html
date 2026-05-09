@@ -1,0 +1,115 @@
+<div class="profile-page">
+  <div class="ps-page-header">
+    <div class="header-title">
+      <h2>Settings</h2>
+      <p>Update your profile photo, phone number and personal information</p>
+    </div>
+  </div>
+
+  <div class="profile-layout">
+    <!-- Left: Identity card -->
+    <div class="profile-card ps-page-card">
+      <div class="avatar-section">
+        <div class="ps-avatar ps-avatar-xl avatar-preview" *ngIf="avatarPreview; else initialsAvatar">
+          <img [src]="avatarPreview" alt="Profile photo" />
+        </div>
+        <ng-template #initialsAvatar>
+          <div class="ps-avatar ps-avatar-xl">{{ getInitials() }}</div>
+        </ng-template>
+        <label class="upload-btn p-button p-component p-button-text p-button-sm">
+          <i class="pi pi-camera"></i>
+          <span>Change photo</span>
+          <input type="file" accept="image/*" (change)="onAvatarSelected($event)" />
+        </label>
+        <button pButton pRipple type="button" label="Save photo" icon="pi pi-save"
+          class="p-button-sm p-button-secondary mt-2" [loading]="savingAvatar"
+          [disabled]="!selectedAvatarFile" (click)="saveAvatar()"></button>
+      </div>
+      <p-divider></p-divider>
+      <div class="identity-info">
+        <div class="info-row">
+          <i class="pi pi-user"></i>
+          <span>{{ currentUser?.firstName }} {{ currentUser?.lastName }}</span>
+        </div>
+        <div class="info-row">
+          <i class="pi pi-envelope"></i>
+          <span>{{ currentUser?.email }}</span>
+        </div>
+        <div class="info-row">
+          <i class="pi pi-id-card"></i>
+          <span>{{ getRoleLabel() }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Forms -->
+    <div class="profile-forms">
+      <!-- Profile info -->
+      <div class="ps-page-card" style="margin-bottom: 1.25rem">
+        <h4 class="form-section-title">Personal Information</h4>
+        <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
+          <div class="field-row-2">
+            <div class="form-field">
+              <label>First name</label>
+              <input pInputText formControlName="firstName" class="w-full" />
+            </div>
+            <div class="form-field">
+              <label>Last name</label>
+              <input pInputText formControlName="lastName" class="w-full" />
+            </div>
+          </div>
+          <div class="form-field">
+            <label>Email address</label>
+            <span class="p-input-icon-left w-full">
+              <i class="pi pi-envelope"></i>
+                <input pInputText formControlName="email" type="email" class="w-full" readonly />
+            </span>
+          </div>
+          <div class="field-row-2">
+
+
+          </div>
+          <div class="form-field">
+            <label>Phone</label>
+            <span class="p-input-icon-left w-full">
+              <i class="pi pi-phone"></i>
+                <input pInputText formControlName="phoneNumber" placeholder="+216 xx xxx xxx" class="w-full" />
+            </span>
+          </div>
+          <div class="form-footer">
+            <button pButton pRipple type="submit" label="Save Changes" icon="pi pi-check"
+              class="p-button-sm" [loading]="savingProfile"></button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Change Password -->
+      <div class="ps-page-card">
+        <h4 class="form-section-title">Change Password</h4>
+        <form [formGroup]="passwordForm" (ngSubmit)="changePassword()">
+          <div class="form-field">
+            <label>Current password</label>
+            <p-password formControlName="currentPassword" [feedback]="false" [toggleMask]="true"
+              styleClass="w-full" inputStyleClass="w-full"></p-password>
+          </div>
+          <div class="field-row-2">
+            <div class="form-field">
+              <label>New password</label>
+              <p-password formControlName="newPassword" placeholder="Min. 8 characters" [toggleMask]="true"
+                styleClass="w-full" inputStyleClass="w-full"></p-password>
+            </div>
+            <div class="form-field">
+              <label>Confirm password</label>
+              <p-password formControlName="confirmPassword" [feedback]="false" [toggleMask]="true"
+                styleClass="w-full" inputStyleClass="w-full"></p-password>
+            </div>
+          </div>
+          <div class="form-footer">
+            <button pButton pRipple type="submit" label="Update Password" icon="pi pi-lock"
+              class="p-button-sm p-button-secondary" [loading]="savingPassword"></button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

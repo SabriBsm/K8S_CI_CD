@@ -1,0 +1,98 @@
+<p-dialog
+  [header]="isEdit ? 'Edit User' : 'Add New User'"
+  [(visible)]="visible"
+  (onHide)="close()"
+  [style]="{width: '540px'}"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false">
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="field-row-2">
+      <div class="form-field">
+        <label>First name <span class="req">*</span></label>
+        <input pInputText formControlName="firstName" placeholder="John" class="w-full"
+               [class.ng-invalid]="isInvalid('firstName')" [class.ng-dirty]="isInvalid('firstName')" />
+        <small *ngIf="isInvalid('firstName')" class="field-error">Required</small>
+      </div>
+      <div class="form-field">
+        <label>Last name <span class="req">*</span></label>
+        <input pInputText formControlName="lastName" placeholder="Doe" class="w-full"
+               [class.ng-invalid]="isInvalid('lastName')" [class.ng-dirty]="isInvalid('lastName')" />
+        <small *ngIf="isInvalid('lastName')" class="field-error">Required</small>
+      </div>
+    </div>
+
+    <!-- Company hint -->
+    <small class="company-hint">
+      <i class="pi pi-info-circle"></i>
+      For a customer: use <strong>Company name</strong> as first name and <strong>legal form</strong> (e.g. SARL, GmbH) as last name.
+    </small>
+
+    <div class="form-field">
+      <label>Email address <span class="req">*</span></label>
+      <span class="p-input-icon-left w-full">
+        <i class="pi pi-envelope"></i>
+        <input pInputText formControlName="email" type="email" placeholder="user@company.com" class="w-full"
+               [class.ng-invalid]="isInvalid('email')" [class.ng-dirty]="isInvalid('email')" />
+      </span>
+      <small *ngIf="isInvalid('email')" class="field-error">Enter a valid email</small>
+    </div>
+
+    <div class="field-row-2">
+      <div class="form-field">
+        <label>Role <span class="req">*</span></label>
+        <p-dropdown formControlName="role" [options]="roles" optionLabel="label" optionValue="value"
+                    placeholder="Select role" styleClass="w-full" appendTo="body" scrollHeight="260px"></p-dropdown>
+      </div>
+      <div class="form-field">
+        <label>Status <span class="req">*</span></label>
+        <p-dropdown formControlName="status" [options]="statuses" optionLabel="label" optionValue="value"
+                    placeholder="Select status" styleClass="w-full" appendTo="body" scrollHeight="260px"></p-dropdown>
+      </div>
+    </div>
+
+    <div class="field-row-2">
+
+
+    </div>
+
+    <div class="form-field">
+      <label>Phone</label>
+      <span class="p-input-icon-left w-full">
+        <i class="pi pi-phone"></i>
+        <input
+          pInputText
+          formControlName="phoneNumber"
+          placeholder="+216 xx xxx xxx"
+          class="w-full"
+          [class.ng-invalid]="isInvalid('phoneNumber')"
+          [class.ng-dirty]="isInvalid('phoneNumber')" />
+      </span>
+      <small *ngIf="isInvalid('phoneNumber')" class="field-error">
+        <span *ngIf="form.get('phoneNumber')?.errors?.['maxlength']">Max. 20 characters</span>
+        <span *ngIf="form.get('phoneNumber')?.errors?.['pattern']">Invalid phone format</span>
+      </small>
+    </div>
+
+    <div class="form-field" *ngIf="!isEdit">
+      <label>Password <span class="req">*</span></label>
+      <p-password formControlName="password" placeholder="Min. 8 characters" [toggleMask]="true"
+                  styleClass="w-full" inputStyleClass="w-full"
+                  [class.ng-invalid]="isInvalid('password')" [class.ng-dirty]="isInvalid('password')">
+      </p-password>
+      <small *ngIf="isInvalid('password')" class="field-error">
+        <span *ngIf="form.get('password')?.errors?.['required']">Required</span>
+        <span *ngIf="form.get('password')?.errors?.['minlength']">Min. 8 characters</span>
+      </small>
+    </div>
+  </form>
+
+  <ng-template pTemplate="footer">
+    <button pButton pRipple label="Cancel" icon="pi pi-times" class="p-button-text p-button-sm" (click)="close()"></button>
+    <button *ngIf="!isEdit" pButton pRipple label="Create & Notify" icon="pi pi-send" class="p-button-secondary p-button-sm"
+            [loading]="loading" (click)="onSubmit(true)"></button>
+    <button pButton pRipple [label]="isEdit ? 'Save Changes' : 'Create User'" icon="pi pi-check" class="p-button-sm"
+            [loading]="loading" (click)="onSubmit()"></button>
+  </ng-template>
+</p-dialog>

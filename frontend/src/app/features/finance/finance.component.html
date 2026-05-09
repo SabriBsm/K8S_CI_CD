@@ -1,0 +1,559 @@
+<section class="finance-page">
+  <section class="hero">
+    <div>
+      <div class="hero-tags">
+        <p class="eyebrow">LIVE FINANCE DASHBOARD</p>
+        <span class="role-chip">{{ roleLabel }}</span>
+        <span class="scope-chip">{{ scopeLabel }}</span>
+      </div>
+      <h1>{{ title }}</h1>
+      <p class="hero-copy">{{ description }}</p>
+      <div class="hero-actions">
+        <a pButton class="p-button-outlined p-button-sm" routerLink="/finance">Back to statistics</a>
+      </div>
+      <p class="alert" *ngIf="statusMessage && !errorMessage">{{ statusMessage }}</p>
+      <p class="alert alert-error" *ngIf="errorMessage">{{ errorMessage }}</p>
+    </div>
+
+    <div class="hero-stats">
+      <article class="stat">
+        <span class="stat-label">{{ isClient ? 'My Projects' : 'Projects' }}</span>
+        <strong>{{ projects.length }}</strong>
+      </article>
+
+      <article class="stat">
+        <span class="stat-label">Visible Budgets</span>
+        <strong>{{ visibleBudgets.length }}</strong>
+      </article>
+
+      <article class="stat">
+        <span class="stat-label">Visible Expenses</span>
+        <strong>{{ visibleExpenses.length }}</strong>
+      </article>
+    </div>
+  </section>
+
+  <section class="ai-dashboard">
+    <article class="dash-card">
+      <span>Planned Budget</span>
+      <strong>{{ totalPlannedBudget | currency:'USD':'symbol':'1.0-0' }}</strong>
+    </article>
+
+    <article class="dash-card">
+      <span>Allocated Budget</span>
+      <strong>{{ totalAllocatedBudget | currency:'USD':'symbol':'1.0-0' }}</strong>
+    </article>
+
+    <article class="dash-card">
+      <span>Project Expenses</span>
+      <strong>{{ totalExpenses | currency:'USD':'symbol':'1.0-0' }}</strong>
+    </article>
+
+    <article class="dash-card" [class.dash-good]="remainingBudget >= 0" [class.dash-bad]="remainingBudget < 0">
+      <span>Remaining Budget</span>
+      <strong>{{ remainingBudget | currency:'USD':'symbol':'1.0-0' }}</strong>
+    </article>
+
+    <article class="dash-card">
+      <span>Reports</span>
+      <strong>{{ reports.length }}</strong>
+    </article>
+
+    <article class="dash-card">
+      <span>Last Sync</span>
+      <strong>{{ lastUpdated ? (lastUpdated | date:'shortTime') : 'Pending' }}</strong>
+    </article>
+  </section>
+
+  <section class="grid">
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Projects</h2>
+          <span>{{ isClient ? 'Only your finance projects' : 'Finance projects from the backend' }}</span>
+        </div>
+
+        <button
+          pButton
+          type="button"
+          class="p-button-outlined p-button-sm"
+          icon="pi pi-refresh"
+          label="Refresh"
+          (click)="refresh()"
+          [disabled]="loading">
+        </button>
+      </div>
+
+      <div class="table-wrap" *ngIf="projects.length; else noProjects">
+        <table>
+          <thead>
+            <tr>
+              <th>Project</th>
+              <th>Status</th>
+              <th *ngIf="!isClient">Client</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              *ngFor="let project of projects; trackBy: trackById"
+              (click)="selectProject(project)"
+              [class.row-active]="selectedProject?.id === project.id">
+              <td>
+                <strong>{{ project.name }}</strong>
+                <p>{{ project.description || 'No description provided.' }}</p>
+              </td>
+              <td>
+                <span class="badge">{{ formatStatus(project.status) }}</span>
+              </td>
+              <td *ngIf="!isClient">{{ project.clientName || 'N/A' }}</td>
+              <td>{{ formatDate(project.createdAt) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Budgets</h2>
+          <span>{{ selectedProject?.name || 'Select a project' }}</span>
+        </div>
+
+        <button
+          *ngIf="canExportFinanceData"
+          pButton
+          type="button"
+          class="p-button-outlined p-button-sm"
+          icon="pi pi-download"
+          label="CSV"
+          (click)="exportBudgets()">
+        </button>
+      </div>
+
+      <div class="empty" *ngIf="loading">Loading budgets...</div>
+
+      <div class="table-wrap" *ngIf="!loading && visibleBudgets.length">
+        <table>
+          <thead>
+            <tr>
+              <th>Budget</th>
+              <th>Allocated</th>
+              <th>Usage</th>
+              <th *ngIf="canDeleteFinanceEntries">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              *ngFor="let budget of visibleBudgets; trackBy: trackById"
+              (click)="selectBudget(budget)"
+              [class.row-active]="selectedBudget?.id === budget.id">
+              <td>
+                <strong>{{ budget.name }}</strong>
+                <p>{{ budget.description || 'No description provided.' }}</p>
+              </td>
+              <td>{{ budget.allocatedAmount | currency:'USD':'symbol':'1.0-0' }}</td>
+              <td>
+                <div>{{ getBudgetUsagePercent(budget) }}%</div>
+                <p-progressBar [value]="getBudgetUsagePercent(budget)" [showValue]="false"></p-progressBar>
+              </td>
+              <td class="actions-cell" *ngIf="canDeleteFinanceEntries">
+                <button
+                  pButton
+                  type="button"
+                  class="p-button-text p-button-sm"
+                  icon="pi pi-trash"
+                  label="Delete"
+                  (click)="deleteBudget(budget, $event)"
+                  [disabled]="deletingBudgetId === budget.id">
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="empty" *ngIf="!loading && !visibleBudgets.length">
+        No budgets found for the selected project.
+      </div>
+    </article>
+
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Expenses</h2>
+          <span>{{ selectedBudget?.name || 'All selected project expenses' }}</span>
+        </div>
+
+        <button
+          *ngIf="canExportFinanceData"
+          pButton
+          type="button"
+          class="p-button-outlined p-button-sm"
+          icon="pi pi-download"
+          label="CSV"
+          (click)="exportExpenses()">
+        </button>
+      </div>
+
+      <div class="empty" *ngIf="loading">Loading expenses...</div>
+
+      <div class="table-wrap" *ngIf="!loading && visibleExpenses.length">
+        <table>
+          <thead>
+            <tr>
+              <th>Expense</th>
+              <th>Date</th>
+              <th>Amount</th>
+              <th *ngIf="canDeleteFinanceEntries">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let expense of visibleExpenses; trackBy: trackById">
+              <td>
+                <strong>{{ expense.title }}</strong>
+                <p>{{ expense.description || expense.budgetName }}</p>
+              </td>
+              <td>{{ formatDate(expense.expenseDate) }}</td>
+              <td>{{ expense.amount | currency:'USD':'symbol':'1.0-0' }}</td>
+              <td class="actions-cell" *ngIf="canDeleteFinanceEntries">
+                <button
+                  pButton
+                  type="button"
+                  class="p-button-text p-button-sm"
+                  icon="pi pi-trash"
+                  label="Delete"
+                  (click)="deleteExpense(expense, $event)"
+                  [disabled]="deletingExpenseId === expense.id">
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="empty" *ngIf="!loading && !visibleExpenses.length">
+        No expenses found for this selection.
+      </div>
+    </article>
+
+    <article class="panel" *ngIf="canManageFinanceEntries">
+      <div class="panel-header">
+        <div>
+          <h2>Budget Composer</h2>
+          <span>{{ selectedProject?.name || 'Choose a project first' }}</span>
+        </div>
+      </div>
+
+      <form class="stack-form" (ngSubmit)="createBudget()">
+        <label>
+          <span>Budget Name</span>
+          <input type="text" name="budgetName" [(ngModel)]="budgetDraft.name" placeholder="Quarterly operations budget" />
+        </label>
+
+        <label>
+          <span>Description</span>
+          <textarea name="budgetDescription" rows="3" [(ngModel)]="budgetDraft.description" placeholder="What this budget covers..."></textarea>
+        </label>
+
+        <div class="split">
+          <label>
+            <span>Planned Amount</span>
+            <input type="number" name="plannedAmount" [(ngModel)]="budgetDraft.plannedAmount" min="0" step="0.01" />
+          </label>
+
+          <label>
+            <span>Allocated Amount</span>
+            <input type="number" name="allocatedAmount" [(ngModel)]="budgetDraft.allocatedAmount" min="0" step="0.01" />
+          </label>
+        </div>
+
+        <div class="split">
+          <label>
+            <span>Start Date</span>
+            <input type="date" name="budgetStartDate" [(ngModel)]="budgetDraft.startDate" />
+          </label>
+
+          <label>
+            <span>End Date</span>
+            <input type="date" name="budgetEndDate" [(ngModel)]="budgetDraft.endDate" />
+          </label>
+        </div>
+
+        <button
+          pButton
+          type="submit"
+          icon="pi pi-plus"
+          [label]="creatingBudget ? 'Saving...' : 'Create budget'"
+          [disabled]="!selectedProject || creatingBudget">
+        </button>
+      </form>
+    </article>
+
+    <article class="panel" *ngIf="canManageFinanceEntries">
+      <div class="panel-header">
+        <div>
+          <h2>Expense Composer</h2>
+          <span>{{ selectedBudget?.name || 'Choose a budget first' }}</span>
+        </div>
+      </div>
+
+      <form class="stack-form" (ngSubmit)="createExpense()">
+        <label>
+          <span>Expense Title</span>
+          <input type="text" name="expenseTitle" [(ngModel)]="expenseDraft.title" placeholder="Vendor invoice" />
+        </label>
+
+        <label>
+          <span>Description</span>
+          <textarea name="expenseDescription" rows="3" [(ngModel)]="expenseDraft.description" placeholder="Reference, vendor, or notes..."></textarea>
+        </label>
+
+        <div class="split">
+          <label>
+            <span>Amount</span>
+            <input type="number" name="expenseAmount" [(ngModel)]="expenseDraft.amount" min="0" step="0.01" />
+          </label>
+
+          <label>
+            <span>Expense Date</span>
+            <input type="date" name="expenseDate" [(ngModel)]="expenseDraft.expenseDate" />
+          </label>
+        </div>
+
+        <label>
+          <span>Budget</span>
+          <select name="expenseBudgetId" [(ngModel)]="expenseDraft.budgetId">
+            <option [ngValue]="null">Select a budget</option>
+            <option *ngFor="let budget of visibleBudgets; trackBy: trackById" [ngValue]="budget.id">
+              {{ budget.name }}
+            </option>
+          </select>
+        </label>
+
+        <button
+          pButton
+          type="submit"
+          icon="pi pi-plus"
+          [label]="creatingExpense ? 'Saving...' : 'Create expense'"
+          [disabled]="!visibleBudgets.length || creatingExpense">
+        </button>
+      </form>
+    </article>
+
+    <article class="panel" *ngIf="canUploadDocuments">
+      <div class="panel-header">
+        <div>
+          <h2>PDF AI Analysis</h2>
+          <span>{{ selectedProject?.name || 'Choose a project first' }}</span>
+        </div>
+      </div>
+
+      <div class="stack-form">
+        <label class="upload-dropzone">
+          <input type="file" accept="application/pdf" (change)="onPdfSelected($event)" [disabled]="!selectedProject || uploadingPdf" />
+          <i class="pi pi-upload"></i>
+          <strong>{{ uploadingPdf ? 'Analyzing PDF...' : 'Upload financial PDF' }}</strong>
+          <span>{{ selectedPdfName || 'PDF will be analyzed by Gemini, then by local fallback if needed.' }}</span>
+        </label>
+
+        <div class="analysis-preview" *ngIf="latestAnalysis as analysis">
+          <div class="analysis-preview__top">
+            <div>
+              <h3>{{ analysis.fileName || 'Latest analysis' }}</h3>
+              <p>{{ formatDateTime(analysis.analyzedAt) }}</p>
+            </div>
+            <span
+              class="badge"
+              [class.badge-good]="isAnalysisAcceptable(analysis.status)"
+              [class.badge-bad]="analysis.status && !isAnalysisAcceptable(analysis.status)">
+              {{ formatStatus(analysis.status || 'Pending review') }}
+            </span>
+          </div>
+
+          <p class="analysis-preview__summary">{{ analysis.summary }}</p>
+
+          <div class="analysis-metrics">
+            <div>
+              <span>Budget</span>
+              <strong>{{ analysis.budget != null ? (analysis.budget | currency:'USD':'symbol':'1.0-0') : 'N/A' }}</strong>
+            </div>
+            <div>
+              <span>Expenses</span>
+              <strong>{{ analysis.expenses != null ? (analysis.expenses | currency:'USD':'symbol':'1.0-0') : 'N/A' }}</strong>
+            </div>
+            <div>
+              <span>Variance</span>
+              <strong>{{ getAnalysisVariance(analysis) != null ? (getAnalysisVariance(analysis) | currency:'USD':'symbol':'1.0-0') : 'N/A' }}</strong>
+            </div>
+            <div>
+              <span>Source</span>
+              <strong>{{ formatSource(analysis.source) }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="panel panel-wide">
+      <div class="panel-header panel-header-stack">
+        <div class="reports-header-main">
+          <div>
+            <h2>Financial Reports</h2>
+            <span>{{ filteredReports.length }} visible report(s)</span>
+          </div>
+
+          <div class="reports-actions">
+            <button
+              *ngIf="canExportFinanceData"
+              pButton
+              type="button"
+              class="p-button-outlined p-button-sm"
+              icon="pi pi-download"
+              label="Export CSV"
+              (click)="exportReports()">
+            </button>
+          </div>
+        </div>
+
+        <label class="reports-search">
+          <i class="pi pi-search"></i>
+          <input
+            type="search"
+            placeholder="Search reports..."
+            [value]="reportSearch"
+            (input)="updateReportSearch($event)">
+        </label>
+      </div>
+
+      <div class="stack-form report-builder" *ngIf="canGenerateReports">
+        <label>
+          <span>Report Summary</span>
+          <textarea
+            rows="3"
+            placeholder="Add context before generating a report..."
+            [value]="reportSummary"
+            (input)="updateReportSummary($event)"></textarea>
+        </label>
+
+        <div class="actions">
+          <button
+            pButton
+            type="button"
+            icon="pi pi-file"
+            [label]="generatingReport ? 'Generating...' : 'Generate report'"
+            (click)="generateReport()"
+            [disabled]="!selectedProject || generatingReport">
+          </button>
+          <span *ngIf="selectedProject">Target: {{ selectedProject.name }}</span>
+        </div>
+      </div>
+
+      <div class="report-list" *ngIf="filteredReports.length; else noReports">
+        <article class="report-card" *ngFor="let report of filteredReports; trackBy: trackById">
+          <div class="report-top">
+            <div>
+              <h3>{{ report.projectName }}</h3>
+              <p>{{ report.clientName || 'No client name available' }}</p>
+            </div>
+
+            <button
+              pButton
+              type="button"
+              class="p-button-outlined p-button-sm"
+              icon="pi pi-download"
+              label="PDF"
+              (click)="downloadReport(report)">
+            </button>
+          </div>
+
+          <div class="report-metrics">
+            <div>
+              <span>Budget</span>
+              <strong>{{ report.totalBudget | currency:'USD':'symbol':'1.0-0' }}</strong>
+            </div>
+            <div>
+              <span>Expenses</span>
+              <strong>{{ report.totalExpenses | currency:'USD':'symbol':'1.0-0' }}</strong>
+            </div>
+            <div>
+              <span>Variance</span>
+              <strong [class]="getReportVarianceClass(report)">
+                {{ report.variance | currency:'USD':'symbol':'1.0-0' }}
+              </strong>
+            </div>
+            <div>
+              <span>Generated</span>
+              <strong>{{ formatDate(report.generatedAt) }}</strong>
+            </div>
+          </div>
+
+          <p class="report-summary">{{ report.summary || 'No summary provided.' }}</p>
+        </article>
+      </div>
+    </article>
+
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>AI Analysis History</h2>
+          <span>{{ analyses.length }} document(s) for the selected project</span>
+        </div>
+      </div>
+
+      <div class="empty" *ngIf="loadingAnalyses">Loading AI analyses...</div>
+
+      <div class="analysis-list" *ngIf="!loadingAnalyses && analyses.length; else noAnalyses">
+        <article class="analysis-card" *ngFor="let analysis of analyses">
+          <div class="analysis-card__top">
+            <div>
+              <h3>{{ analysis.fileName || 'Uploaded document' }}</h3>
+              <p>{{ formatDateTime(analysis.analyzedAt) }}</p>
+            </div>
+            <span
+              class="badge"
+              [class.badge-good]="isAnalysisAcceptable(analysis.status)"
+              [class.badge-bad]="analysis.status && !isAnalysisAcceptable(analysis.status)">
+              {{ formatStatus(analysis.status || 'Pending review') }}
+            </span>
+          </div>
+
+          <p class="analysis-card__text">{{ analysis.analysis }}</p>
+
+          <div class="analysis-list-block" *ngIf="analysis.risks.length">
+            <span>Risks</span>
+            <ul>
+              <li *ngFor="let risk of analysis.risks">{{ risk }}</li>
+            </ul>
+          </div>
+
+          <div class="analysis-list-block" *ngIf="analysis.recommendations.length">
+            <span>Recommendations</span>
+            <ul>
+              <li *ngFor="let recommendation of analysis.recommendations">{{ recommendation }}</li>
+            </ul>
+          </div>
+        </article>
+      </div>
+    </article>
+  </section>
+</section>
+
+<ng-template #noProjects>
+  <div class="empty-card">
+    <p>No projects returned by the finance API.</p>
+  </div>
+</ng-template>
+
+<ng-template #noReports>
+  <div class="empty-card">
+    <p>{{ canGenerateReports ? 'No reports found. Generate one from the selected project.' : 'No reports available yet.' }}</p>
+  </div>
+</ng-template>
+
+<ng-template #noAnalyses>
+  <div class="empty-card">
+    <p>No AI document analyses found for this project yet.</p>
+  </div>
+</ng-template>

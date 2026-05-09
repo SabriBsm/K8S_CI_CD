@@ -1,0 +1,348 @@
+<!-- ── Page Header ───────────────────────────────────────────── -->
+<div class="page-header">
+  <div class="page-header__info">
+    <h1 class="page-title"><i class="pi pi-ticket"></i> Tickets</h1>
+    <p class="page-subtitle">Track and manage support requests, bugs, and incidents</p>
+  </div>
+  <button pButton icon="pi pi-plus" label="New Ticket" class="p-button-sm" (click)="openNew()"></button>
+</div>
+
+<!-- ── Stats ────────────────────────────────────────────────── -->
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-icon stat-icon--blue"><i class="pi pi-ticket"></i></div>
+    <div class="stat-body">
+      <div class="stat-value">{{ totalCount }}</div>
+      <div class="stat-label">Total Tickets</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-icon--amber"><i class="pi pi-spin pi-spinner"></i></div>
+    <div class="stat-body">
+      <div class="stat-value">{{ openCount }}</div>
+      <div class="stat-label">Open</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-icon--green"><i class="pi pi-check-circle"></i></div>
+    <div class="stat-body">
+      <div class="stat-value">{{ resolvedCount }}</div>
+      <div class="stat-label">Resolved</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-icon--red"><i class="pi pi-exclamation-circle"></i></div>
+    <div class="stat-body">
+      <div class="stat-value">{{ criticalCount }}</div>
+      <div class="stat-label">Critical</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Filters ──────────────────────────────────────────────── -->
+<div class="filter-bar">
+  <span class="p-input-icon-left filter-search">
+    <i class="pi pi-search"></i>
+    <input pInputText type="text" placeholder="Search by title or reference…"
+           [(ngModel)]="searchText" (ngModelChange)="applyFilters()" />
+  </span>
+
+  <p-dropdown [options]="statusOptions" [(ngModel)]="filterStatus"
+              (ngModelChange)="applyFilters()" placeholder="Status"
+              [showClear]="true" styleClass="filter-drop" appendTo="body"></p-dropdown>
+
+  <p-dropdown [options]="priorityOptions" [(ngModel)]="filterPriority"
+              (ngModelChange)="applyFilters()" placeholder="Priority"
+              [showClear]="true" styleClass="filter-drop" appendTo="body"></p-dropdown>
+
+  <p-dropdown [options]="categoryOptions" [(ngModel)]="filterCategory"
+              (ngModelChange)="applyFilters()" placeholder="Category"
+              [showClear]="true" styleClass="filter-drop" appendTo="body"></p-dropdown>
+
+  <button pButton icon="pi pi-filter-slash" label="Clear" class="p-button-outlined p-button-sm"
+          (click)="clearFilters()"></button>
+</div>
+
+<!-- ── DataTable ─────────────────────────────────────────────── -->
+<div class="table-card">
+  <p-table [value]="filteredTickets" [loading]="loading"
+           [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10,25,50]"
+           [globalFilterFields]="['reference','title','submittedBy']"
+           styleClass="p-datatable-sm" responsiveLayout="scroll">
+
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Reference</th>
+        <th>Title</th>
+        <th>Category</th>
+        <th>Priority</th>
+        <th>Status</th>
+        <th>Submitted By</th>
+        <th>Due Date</th>
+        <th style="width:130px">Actions</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-ticket>
+      <tr>
+        <td><span class="ref-badge">{{ ticket.reference }}</span></td>
+        <td>
+          <span class="ticket-title" (click)="openDetail(ticket)">{{ ticket.title }}</span>
+        </td>
+        <td><span class="category-label">{{ categoryLabel(ticket.category) }}</span></td>
+        <td>
+          <p-tag [value]="ticket.priority" [severity]="prioritySeverity(ticket.priority)"></p-tag>
+        </td>
+        <td>
+          <p-tag [value]="statusLabel(ticket.status)" [severity]="statusSeverity(ticket.status)"></p-tag>
+        </td>
+        <td>{{ ticket.submittedBy }}</td>
+        <td>{{ ticket.dueDate ? (ticket.dueDate | date:'mediumDate') : '—' }}</td>
+        <td>
+          <div class="action-btns">
+            <button pButton icon="pi pi-eye"    class="p-button-text p-button-sm p-button-info"
+                    pTooltip="View" (click)="openDetail(ticket)"></button>
+            <button *ngIf="isCreator(ticket)" pButton icon="pi pi-pencil" class="p-button-text p-button-sm"
+                    pTooltip="Edit" (click)="openEdit(ticket)"
+                    [disabled]="isClosed(ticket)"></button>
+            <button *ngIf="isCreator(ticket)" pButton icon="pi pi-trash"  class="p-button-text p-button-sm p-button-danger"
+                    pTooltip="Delete" (click)="deleteTicket(ticket)"></button>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr><td colspan="8">
+        <div class="empty-state">
+          <i class="pi pi-inbox empty-icon"></i>
+          <p>No tickets found</p>
+        </div>
+      </td></tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<!-- ── Create / Edit Dialog ─────────────────────────────────── -->
+<p-dialog [(visible)]="ticketDialog" [header]="isEditMode ? 'Edit Ticket' : 'New Ticket'"
+          [modal]="true" [style]="{width:'720px'}" [draggable]="false">
+
+  <div class="form-grid">
+
+    <div class="form-col-2" *ngIf="isEditMode">
+      <label>Reference</label>
+      <input pInputText [ngModel]="ticketForm.reference" [disabled]="true" />
+    </div>
+
+    <!-- submittedBy : auto-rempli depuis l'utilisateur connecté, lecture seule -->
+    <div class="form-col-2">
+      <label>Submitted By</label>
+      <input pInputText [ngModel]="ticketForm.submittedBy" [disabled]="true"
+             placeholder="Auto (utilisateur connecté)" />
+    </div>
+
+    <div class="form-col-full">
+      <label>Title <span class="req">*</span></label>
+      <input pInputText [(ngModel)]="ticketForm.title" placeholder="Short description of the issue" />
+    </div>
+    <div class="form-col-full">
+      <label>Description</label>
+      <textarea pInputTextarea [(ngModel)]="ticketForm.description" rows="3"
+                placeholder="Detailed description…" autoResize="true"></textarea>
+    </div>
+    <div class="form-col-3">
+      <label>Category <span class="req">*</span></label>
+      <p-dropdown [options]="categoryOptions" [(ngModel)]="ticketForm.category"
+                  placeholder="Select" [style]="{width:'100%'}" appendTo="body"></p-dropdown>
+    </div>
+    <div class="form-col-3">
+      <label>Priority <span class="req">*</span></label>
+      <p-dropdown [options]="priorityOptions" [(ngModel)]="ticketForm.priority"
+                  placeholder="Select" [style]="{width:'100%'}" appendTo="body"></p-dropdown>
+    </div>
+
+    <div class="form-col-3" *ngIf="isEditMode">
+      <label>Status</label>
+      <p-dropdown [options]="statusOptions" [(ngModel)]="ticketForm.status"
+                  placeholder="Select" [style]="{width:'100%'}" appendTo="body"></p-dropdown>
+    </div>
+
+    <!-- assignedTo : liste déroulante des utilisateurs -->
+    <div class="form-col-2">
+      <label>Assigned To (submittedTo)</label>
+      <p-dropdown [options]="usersOptions" [(ngModel)]="ticketForm.assignedTo"
+                  placeholder="Sélectionner un utilisateur"
+                  [showClear]="true" [filter]="true" filterPlaceholder="Rechercher…"
+                  [style]="{width:'100%'}" appendTo="body"></p-dropdown>
+    </div>
+    <div class="form-col-2">
+      <label>Due Date</label>
+      <p-calendar [(ngModel)]="ticketForm.dueDate" dateFormat="yy-mm-dd"
+                  [style]="{width:'100%'}" placeholder="YYYY-MM-DD" appendTo="body"></p-calendar>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button pButton label="Cancel" class="p-button-text p-button-sm" (click)="ticketDialog=false"></button>
+    <button pButton [label]="isEditMode ? 'Update' : 'Create'" class="p-button-sm" (click)="saveTicket()"></button>
+  </ng-template>
+</p-dialog>
+
+<!-- ── Detail / Responses Dialog ────────────────────────────── -->
+<p-dialog [(visible)]="detailDialog" header="Ticket Detail"
+          [modal]="true" [style]="{width:'1200px', maxWidth:'95vw', height:'85vh'}" [draggable]="false"
+          (onHide)="onDetailHide()">
+
+  <ng-container *ngIf="selectedTicket">
+  <div class="detail-split">
+  <div class="detail-left">
+    <div class="detail-meta">
+      <span class="ref-badge">{{ selectedTicket.reference }}</span>
+      <p-tag [value]="statusLabel(selectedTicket.status)"   [severity]="statusSeverity(selectedTicket.status)"></p-tag>
+      <p-tag [value]="selectedTicket.priority"              [severity]="prioritySeverity(selectedTicket.priority)"></p-tag>
+    </div>
+
+    <h3 class="detail-title">{{ selectedTicket.title }}</h3>
+    <p class="detail-desc">{{ selectedTicket.description || 'No description provided.' }}</p>
+
+    <div class="detail-grid">
+      <div><span class="dl">Category</span><span>{{ categoryLabel(selectedTicket.category) }}</span></div>
+      <div><span class="dl">Submitted By</span><span>{{ selectedTicket.submittedBy }}</span></div>
+      <div><span class="dl">Assigned To</span><span>{{ selectedTicket.assignedTo || '—' }}</span></div>
+      <div><span class="dl">Due Date</span><span>{{ selectedTicket.dueDate ? (selectedTicket.dueDate | date:'mediumDate') : '—' }}</span></div>
+    </div>
+
+    <div class="status-actions" *ngIf="!isClosed(selectedTicket) && isCreator(selectedTicket)">
+      <span class="dl">Move to:</span>
+      <button *ngFor="let opt of nextStatusOptions(selectedTicket.status)"
+              pButton [label]="opt.label" class="p-button-outlined p-button-sm"
+              (click)="changeStatus(selectedTicket, opt.value)"></button>
+    </div>
+    <div class="closed-notice" *ngIf="isClosed(selectedTicket)">
+      <div class="closed-notice">
+        <i class="pi pi-lock"></i> This ticket is closed and cannot be modified.
+      </div>
+    </div>
+    <div class="closed-notice" *ngIf="!isClosed(selectedTicket) && !isCreator(selectedTicket)">
+      <div class="closed-notice">
+        <i class="pi pi-eye"></i> Read-only mode: only the ticket creator can edit status.
+      </div>
+    </div>
+
+    <div class="pdf-report-bar" *ngIf="selectedTicket.status === 'RESOLVED' || selectedTicket.status === 'CLOSED'">
+      <div class="pdf-report-info">
+        <i class="pi pi-file-pdf"></i>
+        <span>Ce ticket est résolu — un rapport de résolution IA est disponible.</span>
+      </div>
+      <button pButton icon="pi pi-download" label="Télécharger le rapport PDF"
+              class="p-button-sm pdf-download-btn"
+              [loading]="generatingSummary" [disabled]="generatingSummary"
+              (click)="downloadSummaryPdf()">
+      </button>
+    </div>
+
+    <p-divider></p-divider>
+
+    <h4 class="responses-title"><i class="pi pi-comments"></i> Responses ({{ responses.length }})</h4>
+    <div class="response-list">
+      <div *ngFor="let r of responses" class="response-item">
+        <ng-container *ngIf="editingResponseId !== r.id; else editMode">
+          <div class="response-header">
+            <div class="response-meta">
+              <i class="pi pi-user response-avatar"></i>
+              <span class="response-by">{{ r.respondedBy }}</span>
+              <span class="response-date">{{ r.createdAt | date:'short' }}</span>
+            </div>
+            <div class="response-actions" *ngIf="!isClosed(selectedTicket!) && isCreator(selectedTicket!)">
+              <button pButton icon="pi pi-pencil" class="p-button-text p-button-sm"
+                      pTooltip="Edit" (click)="startEditResponse(r)"></button>
+              <button pButton icon="pi pi-trash"  class="p-button-text p-button-sm p-button-danger"
+                      pTooltip="Delete" (click)="deleteResponse(r)"></button>
+            </div>
+          </div>
+          <p class="response-content">{{ r.content }}</p>
+          <a *ngIf="r.attachment" [href]="getAttachmentUrl(r.attachment)" target="_blank"
+             class="response-attachment">
+            <i class="pi pi-paperclip"></i> {{ attachmentName(r.attachment) }}
+          </a>
+        </ng-container>
+        <ng-template #editMode>
+          <div class="response-edit">
+            <textarea pInputTextarea [(ngModel)]="editingContent" rows="2"
+                      autoResize="true" style="width:100%"></textarea>
+            <div class="response-edit-actions">
+              <button pButton icon="pi pi-check" label="Save"   class="p-button-sm"
+                      (click)="saveEditResponse(r)"></button>
+              <button pButton icon="pi pi-times" label="Cancel" class="p-button-text p-button-sm"
+                      (click)="cancelEditResponse()"></button>
+            </div>
+          </div>
+        </ng-template>
+      </div>
+      <div *ngIf="responses.length === 0" class="no-responses">
+        <i class="pi pi-inbox"></i> No responses yet.
+      </div>
+    </div>
+
+    <div class="add-response" *ngIf="!isClosed(selectedTicket!) && canRespond(selectedTicket!)">
+      <div class="ai-bar">
+        <span class="ai-label"><i class="pi pi-sparkles"></i> Générer avec IA</span>
+        <input pInputText class="ai-context-input"
+               [(ngModel)]="aiContext"
+               placeholder="Contexte optionnel (ex: problème réseau, version 2.4)…" />
+        <button pButton label="Générer" icon="pi pi-sparkles"
+                class="p-button-sm ai-generate-btn"
+                [loading]="generatingAi" [disabled]="generatingAi"
+                (click)="generateAiResponse()">
+        </button>
+      </div>
+
+      <textarea pInputTextarea [(ngModel)]="newResponse" rows="3"
+                placeholder="Écrivez une réponse ou générez-en une avec l'IA…"
+                autoResize="true" style="width:100%"></textarea>
+
+      <div class="file-row">
+        <label class="file-pick-btn" for="responseFile">
+          <i class="pi pi-paperclip"></i> Attach file
+        </label>
+        <input type="file" id="responseFile" hidden (change)="onFileSelected($event)" />
+        <span class="file-chip" *ngIf="selectedFile">
+          <i class="pi pi-file"></i>
+          {{ selectedFile.name }}
+          <span class="file-size">({{ (selectedFile.size / 1024).toFixed(0) }} KB)</span>
+          <button pButton icon="pi pi-times" class="p-button-text p-button-sm p-button-danger file-clear"
+                  (click)="clearFile()"></button>
+        </span>
+      </div>
+
+      <div class="add-response-footer">
+        <button pButton icon="pi pi-send" label="Envoyer" class="p-button-sm"
+                [disabled]="!newResponse.trim() || uploading"
+                [loading]="uploading"
+                (click)="submitResponse()"></button>
+      </div>
+    </div>
+  </div><!-- end detail-left -->
+
+  <div class="detail-right" *ngIf="channelId">
+    <app-channel-panel
+      [ticketId]="selectedTicket!.id!"
+      [currentUser]="currentUser"
+      [onSignal]="handleVoiceSignal">
+    </app-channel-panel>
+    <app-voice-panel
+      #voicePanel
+      [channelId]="channelId"
+      [currentUser]="currentUser">
+    </app-voice-panel>
+  </div>
+  <div class="detail-right detail-right--loading" *ngIf="!channelId">
+    <i class="pi pi-spin pi-spinner"></i>
+    <span>Chargement du channel…</span>
+  </div>
+
+  </div><!-- end detail-split -->
+  </ng-container>
+</p-dialog>
+
+<p-confirmDialog></p-confirmDialog>

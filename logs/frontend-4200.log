@@ -1,0 +1,42 @@
+
+> plan-sync-pi-dev@0.0.0 start
+> ng serve
+
+[33m>[39m Building...
+[32m√[39m Building...
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m               [2m | [22m [1mRaw size[22m
+[32mstyles.css[39m         [2m | [22m[2mstyles[22m              [2m | [22m[36m690.99 kB[39m[2m | [22m
+[32mpolyfills.js[39m       [2m | [22m[2mpolyfills[22m           [2m | [22m [36m90.20 kB[39m[2m | [22m
+[32mmain.js[39m            [2m | [22m[2mmain[22m                [2m | [22m [36m61.01 kB[39m[2m | [22m
+[32mchunk-GDXDH56W.js[39m  [2m | [22m[2m-[22m                   [2m | [22m [36m20.94 kB[39m[2m | [22m
+[32mchunk-T2CCFAOJ.js[39m  [2m | [22m[2m-[22m                   [2m | [22m [36m19.25 kB[39m[2m | [22m
+[32mchunk-SPBYTK7K.js[39m  [2m | [22m[2m-[22m                   [2m | [22m [36m16.01 kB[39m[2m | [22m
+[32mchunk-MTVYUWV4.js[39m  [2m | [22m[2m-[22m                   [2m | [22m [36m10.04 kB[39m[2m | [22m
+[32mchunk-WDMUDEB6.js[39m  [2m | [22m[2m-[22m                   [2m | [22m  [36m1.93 kB[39m[2m | [22m
+[32mchunk-OF4DC62R.js[39m  [2m | [22m[2m-[22m                   [2m | [22m[36m807 bytes[39m[2m | [22m
+
+[1m [22m                  [2m | [22m[1mInitial total[22m       [2m | [22m[1m911.16 kB[22m
+
+[1mLazy chunk files[22m   [2m | [22m[1mNames[22m               [2m | [22m [1mRaw size[22m
+[32mchunk-5PEBGQMR.js[39m  [2m | [22m[2mprojects-module[22m     [2m | [22m[36m444.51 kB[39m[2m | [22m
+[32mchunk-MM2QDDKR.js[39m  [2m | [22m[2mquality-module[22m      [2m | [22m[36m324.92 kB[39m[2m | [22m
+[32mchunk-C2P6DKG4.js[39m  [2m | [22m[2mrisks-module[22m        [2m | [22m[36m273.96 kB[39m[2m | [22m
+[32mchunk-A3W5WS5Q.js[39m  [2m | [22m[2mtickets-module[22m      [2m | [22m[36m136.87 kB[39m[2m | [22m
+[32mchunk-B24776IV.js[39m  [2m | [22m[2mfinance-module[22m      [2m | [22m[36m130.33 kB[39m[2m | [22m
+[32mchunk-MSL2BXGP.js[39m  [2m | [22m[2mtasks-module[22m        [2m | [22m [36m80.32 kB[39m[2m | [22m
+[32mchunk-TTLEI4LP.js[39m  [2m | [22m[2mauth-module[22m         [2m | [22m [36m66.88 kB[39m[2m | [22m
+[32mchunk-RGYWQJ35.js[39m  [2m | [22m[2musers-module[22m        [2m | [22m [36m48.90 kB[39m[2m | [22m
+[32mchunk-ULNH5FFO.js[39m  [2m | [22m[2madmin-module[22m        [2m | [22m [36m42.78 kB[39m[2m | [22m
+[32mchunk-PXE3ST4Z.js[39m  [2m | [22m[2mdashboard-module[22m    [2m | [22m [36m38.63 kB[39m[2m | [22m
+[32mchunk-AXQQNEG4.js[39m  [2m | [22m[2mnotifications-module[22m[2m | [22m [36m16.91 kB[39m[2m | [22m
+[32mchunk-AEZMFR3E.js[39m  [2m | [22m[2m-[22m                   [2m | [22m [36m10.16 kB[39m[2m | [22m
+[32mchunk-Y4IX2MXB.js[39m  [2m | [22m[2m-[22m                   [2m | [22m  [36m6.05 kB[39m[2m | [22m
+[32mchunk-DN5B2UK7.js[39m  [2m | [22m[2manalytics-module[22m    [2m | [22m  [36m4.21 kB[39m[2m | [22m
+[32mchunk-BMMHCF5O.js[39m  [2m | [22m[2mkanban-module[22m       [2m | [22m  [36m4.10 kB[39m[2m | [22m
+[2m...and 1 more lazy chunks files. Use "--verbose" to show all the files.[22m
+
+Application bundle generation complete. [12.695 seconds]
+
+Watch mode enabled. Watching for file changes...
+NOTE: Raw file sizes do not reflect development server per-request transformations.
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m4200[22m/[39m

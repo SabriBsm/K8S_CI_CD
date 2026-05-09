@@ -1,0 +1,102 @@
+<div class="vp">
+  <!-- Header -->
+  <div class="vp-header">
+    <i class="pi pi-volume-up vp-icon"></i>
+    <span class="vp-title">Canal Vocal</span>
+    <span class="vp-live" *ngIf="inCall && isConnected">CONNECTÉ</span>
+    <span class="vp-waiting-badge" *ngIf="inCall && !isConnected">EN ATTENTE</span>
+  </div>
+
+  <!-- Participants -->
+  <div class="vp-users" *ngIf="inCall">
+
+    <!-- Moi -->
+    <div class="vp-user" [class.vp-user--speaking]="localSpeaking">
+      <div class="vp-avatar-wrap">
+        <div class="vp-avatar vp-avatar--self">{{ initials(currentUser) }}</div>
+        <div class="vp-ring" *ngIf="localSpeaking"></div>
+      </div>
+      <div class="vp-user-info">
+        <span class="vp-user-name">{{ currentUser }} <span class="vp-you">(vous)</span></span>
+        <!-- Micro level bar -->
+        <div class="vp-level-wrap">
+          <i class="pi" [class.pi-microphone]="!isMuted" [class.pi-microphone-slash]="isMuted"
+             [class.vp-muted-icon]="isMuted"></i>
+          <div class="vp-level-bar">
+            <div class="vp-level-fill vp-level-fill--local"
+                 [style.width.%]="isMuted ? 0 : localLevel * 100">
+            </div>
+          </div>
+          <span class="vp-level-hint" *ngIf="!isMuted">
+            {{ localSpeaking ? 'Parle…' : 'Micro actif' }}
+          </span>
+          <span class="vp-level-hint vp-level-hint--muted" *ngIf="isMuted">Micro coupé</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Participants distants -->
+    <div *ngFor="let u of remoteUsers" class="vp-user" [class.vp-user--speaking]="remoteSpeaking">
+      <div class="vp-avatar-wrap">
+        <div class="vp-avatar vp-avatar--remote">{{ initials(u) }}</div>
+        <div class="vp-ring vp-ring--remote" *ngIf="remoteSpeaking"></div>
+      </div>
+      <div class="vp-user-info">
+        <span class="vp-user-name">{{ u }}</span>
+        <div class="vp-level-wrap" *ngIf="isConnected">
+          <i class="pi pi-volume-up" [class.vp-speaking-icon]="remoteSpeaking"></i>
+          <div class="vp-level-bar">
+            <div class="vp-level-fill vp-level-fill--remote"
+                 [style.width.%]="remoteLevel * 100">
+            </div>
+          </div>
+          <span class="vp-level-hint" [class.vp-level-hint--active]="remoteSpeaking">
+            {{ remoteSpeaking ? 'Parle…' : 'Écoute' }}
+          </span>
+        </div>
+        <span class="vp-connecting" *ngIf="!isConnected">
+          <i class="pi pi-spin pi-spinner"></i> Connexion…
+        </span>
+      </div>
+    </div>
+
+    <!-- En attente -->
+    <div *ngIf="remoteUsers.length === 0" class="vp-waiting">
+      <i class="pi pi-spin pi-spinner"></i>
+      En attente d'un autre participant…
+    </div>
+  </div>
+
+  <!-- Avant de rejoindre -->
+  <div class="vp-idle" *ngIf="!inCall">
+    <i class="pi pi-phone vp-idle-icon"></i>
+    <p>Cliquez <strong>Rejoindre</strong> pour activer le canal vocal</p>
+  </div>
+
+  <!-- Status / Erreur -->
+  <div class="vp-status" *ngIf="statusMsg">
+    <i class="pi pi-spin pi-spinner"></i> {{ statusMsg }}
+  </div>
+  <div class="vp-error" *ngIf="error">
+    <i class="pi pi-exclamation-triangle"></i> {{ error }}
+  </div>
+
+  <!-- Controls -->
+  <div class="vp-controls">
+    <button *ngIf="!inCall" class="vp-btn vp-btn--join" (click)="joinVoice()">
+      <i class="pi pi-phone"></i> Rejoindre le canal
+    </button>
+
+    <ng-container *ngIf="inCall">
+      <button class="vp-btn" [class.vp-btn--muted]="isMuted" (click)="toggleMute()">
+        <i class="pi" [class.pi-microphone]="!isMuted" [class.pi-microphone-slash]="isMuted"></i>
+        {{ isMuted ? 'Activer micro' : 'Couper micro' }}
+      </button>
+      <button class="vp-btn vp-btn--hangup" (click)="hangup()">
+        <i class="pi pi-phone"></i> Quitter
+      </button>
+    </ng-container>
+  </div>
+
+  <audio #remoteAudio autoplay playsinline style="display:none"></audio>
+</div>

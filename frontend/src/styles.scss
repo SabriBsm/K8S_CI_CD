@@ -1,0 +1,51 @@
+@import 'styles/variables';
+@import 'styles/typography';
+@import 'styles/primeng-overrides';
+@import 'styles/utilities';
+
+// Global layout rules
+html, body {
+  height: 100%;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+// Main app layout
+.ps-layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.ps-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.ps-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--content-padding);
+  background: var(--content-bg);
+}
+
+// Grid helpers
+.ps-grid {
+  display: grid;
+  gap: 1.25rem;
+
+  &.cols-2 { grid-template-columns: repeat(2, 1fr); }
+  &.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  &.cols-4 { grid-template-columns: repeat(4, 1fr); }
+
+  @media (max-width: 1200px) {
+    &.cols-4 { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 768px) {
+    &.cols-2, &.cols-3, &.cols-4 { grid-template-columns: 1fr; }
+  }
+}

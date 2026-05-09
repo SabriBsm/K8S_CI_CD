@@ -1,0 +1,95 @@
+<div class="auth-wrapper">
+  <div class="auth-card register-card">
+    <div class="auth-panel-left">
+      <div class="auth-panel-content">
+        <div class="brand-logo"><i class="pi pi-sync"></i></div>
+        <h2>PlanSync Pro</h2>
+        <p>Join thousands of teams managing projects smarter.</p>
+        <div class="auth-stats">
+          <div class="stat"><span class="stat-number">25%+</span><span class="stat-label">Productivity boost</span></div>
+          <div class="stat"><span class="stat-number">40%</span><span class="stat-label">Faster delivery</span></div>
+          <div class="stat"><span class="stat-number">99.9%</span><span class="stat-label">Uptime SLA</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="auth-panel-right">
+      <div class="auth-form-wrapper">
+        <div class="form-header">
+          <h3>Create your account</h3>
+          <p>Get started for free — no credit card required</p>
+        </div>
+
+        <p-messages [(value)]="messages" [closable]="true"></p-messages>
+
+        <form [formGroup]="form" (ngSubmit)="onSubmit()">
+          <div class="field-row-2">
+            <div class="form-field">
+              <label>First name</label>
+              <input pInputText formControlName="firstName" placeholder="John" class="w-full"
+                [class.ng-invalid]="isInvalid('firstName')" [class.ng-dirty]="isInvalid('firstName')" />
+              <small *ngIf="isInvalid('firstName')" class="field-error">First name is required</small>
+            </div>
+            <div class="form-field">
+              <label>Last name</label>
+              <input pInputText formControlName="lastName" placeholder="Doe" class="w-full"
+                [class.ng-invalid]="isInvalid('lastName')" [class.ng-dirty]="isInvalid('lastName')" />
+              <small *ngIf="isInvalid('lastName')" class="field-error">Last name is required</small>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label>Email address</label>
+            <span class="p-input-icon-left w-full">
+              <i class="pi pi-envelope"></i>
+              <input pInputText formControlName="email" type="email" placeholder="you@company.com" class="w-full"
+                [class.ng-invalid]="isInvalid('email')" [class.ng-dirty]="isInvalid('email')" />
+            </span>
+            <small *ngIf="isInvalid('email')" class="field-error">Enter a valid email</small>
+          </div>
+
+          <div class="form-field">
+            <label>Role</label>
+            <p-dropdown formControlName="role" [options]="roles" optionLabel="label" optionValue="value"
+              placeholder="Select your role" styleClass="w-full" appendTo="body" scrollHeight="260px"
+              [class.ng-invalid]="isInvalid('role')" [class.ng-dirty]="isInvalid('role')">
+            </p-dropdown>
+          </div>
+
+          <div class="field-row-2">
+            <div class="form-field">
+              <label>Password</label>
+              <p-password formControlName="password" placeholder="Min. 8 characters" [toggleMask]="true"
+                styleClass="w-full" inputStyleClass="w-full"
+                [class.ng-invalid]="isInvalid('password')" [class.ng-dirty]="isInvalid('password')">
+              </p-password>
+              <small *ngIf="isInvalid('password')" class="field-error">
+                <span *ngIf="form.get('password')?.errors?.['minlength']">Min. 8 characters</span>
+                <span *ngIf="form.get('password')?.errors?.['required']">Required</span>
+              </small>
+            </div>
+            <div class="form-field">
+              <label>Confirm password</label>
+              <p-password formControlName="confirmPassword" placeholder="Repeat password" [toggleMask]="true"
+                [feedback]="false" styleClass="w-full" inputStyleClass="w-full"
+                [class.ng-invalid]="isInvalid('confirmPassword')" [class.ng-dirty]="isInvalid('confirmPassword')">
+              </p-password>
+              <small *ngIf="form.errors?.['passwordMismatch'] && form.get('confirmPassword')?.touched" class="field-error">
+                Passwords do not match
+              </small>
+            </div>
+          </div>
+
+          <button pButton pRipple type="submit" label="Create account" icon="pi pi-arrow-right" iconPos="right"
+            class="w-full submit-btn" [loading]="loading">
+          </button>
+        </form>
+
+        <p-divider></p-divider>
+        <p class="register-link">
+          Already have an account? <a routerLink="/auth/login">Sign in</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>

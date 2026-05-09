@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: plansync
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+        - name: api-gateway
+          image: sabriboussami/plansync-api-gateway:2026-05-09-corsfix
+          ports:
+            - containerPort: 8085
+          env:
+            - name: SPRING_CONFIG_IMPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: plansync-app-config
+                  key: SPRING_CONFIG_IMPORT
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              valueFrom:
+                configMapKeyRef:
+                  name: plansync-app-config
+                  key: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: plansync-secrets
+                  key: jwt-secret
+          resources:
+            requests:
+              cpu: "150m"
+              memory: "384Mi"
+            limits:
+              cpu: "400m"
+              memory: "640Mi"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8085
+            initialDelaySeconds: 90
+            periodSeconds: 15
+            failureThreshold: 15
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8085
+            initialDelaySeconds: 240
+            periodSeconds: 30
+            failureThreshold: 5

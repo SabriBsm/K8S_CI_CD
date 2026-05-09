@@ -1,0 +1,98 @@
+<div class="quality-face-profile-setup-page">
+  <div class="section-header">
+    <div>
+      <h3>Face Profile Setup</h3>
+      <p>Register or update the auditor face descriptor used by audit identity verification.</p>
+    </div>
+  </div>
+
+  <div class="privacy-note">
+    <i class="pi pi-shield"></i>
+    <span>For demo purposes, face descriptors are stored for audit identity verification. Raw webcam images are not stored.</span>
+  </div>
+
+  <div class="setup-layout">
+    <div class="ps-page-card camera-card">
+      <div class="card-header-bar">
+        <h4>Webcam Preview</h4>
+        <span class="status-pill" [class.status-ready]="modelsLoaded">{{ modelsLoaded ? 'Models ready' : 'Models loading' }}</span>
+      </div>
+
+      <div class="video-frame">
+        <video #videoElement autoplay playsinline></video>
+        <div class="video-placeholder" *ngIf="!cameraActive">
+          <i class="pi pi-camera"></i>
+          <span>Camera preview</span>
+        </div>
+      </div>
+
+      <div class="detection-status">
+        <i class="pi pi-circle-fill"></i>
+        <span>{{ detectionStatus }}</span>
+      </div>
+
+      <div class="camera-actions">
+        <button
+          pButton
+          pRipple
+          type="button"
+          label="Open Webcam"
+          icon="pi pi-camera"
+          class="p-button-outlined"
+          [loading]="cameraLoading"
+          (click)="startCamera()">
+        </button>
+        <button
+          pButton
+          pRipple
+          type="button"
+          label="Stop"
+          icon="pi pi-times"
+          class="p-button-text"
+          [disabled]="!cameraActive"
+          (click)="stopCamera()">
+        </button>
+      </div>
+    </div>
+
+    <div class="ps-page-card profile-card">
+      <div class="card-header-bar">
+        <h4>Profile Information</h4>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-row">
+          <label for="profile-user-id">User ID</label>
+          <input
+            id="profile-user-id"
+            pInputText
+            type="number"
+            [(ngModel)]="userId"
+            (blur)="loadProfileStatus()"
+            placeholder="Example: 6" />
+        </div>
+
+        <div class="profile-status-card">
+          <span class="badge" [ngClass]="getProfileBadgeClass()">
+            {{ profileStatus?.hasProfile ? 'Profile Registered' : 'No Profile' }}
+          </span>
+          <span class="badge badge-active" *ngIf="detectionStatus === 'Face detected'">Face Detected</span>
+          <div class="item-meta" *ngIf="profileStatus?.updatedAt">
+            Last updated {{ profileStatus?.updatedAt | date:'medium' }}
+          </div>
+        </div>
+
+        <button
+          pButton
+          pRipple
+          type="button"
+          [label]="profileStatus?.hasProfile ? 'Update Face Profile' : 'Save Face Profile'"
+          icon="pi pi-save"
+          [loading]="registering"
+          [disabled]="registering || !cameraActive"
+          (click)="saveProfile()">
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

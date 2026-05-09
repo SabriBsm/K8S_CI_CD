@@ -1,0 +1,38 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.5)
+
+2026-04-24T20:53:14.727+01:00  INFO 27320 --- [config-server] [           main] c.m.c.ConfigServerApplication            : Starting ConfigServerApplication v0.0.1-SNAPSHOT using Java 17.0.18 with PID 27320 (C:\Users\SABRI\Etude_Esprit\4_ArcTic\PI_Cloud\dev\Projet-PlanSyncPro\PlanSync_MicroService\backend\config-server\target\config-server-0.0.1-SNAPSHOT.jar started by SABRI in C:\Users\SABRI\Etude_Esprit\4_ArcTic\PI_Cloud\dev\Projet-PlanSyncPro\PlanSync_MicroService\backend\config-server)
+2026-04-24T20:53:14.732+01:00  INFO 27320 --- [config-server] [           main] c.m.c.ConfigServerApplication            : The following 1 profile is active: "native"
+2026-04-24T20:53:17.018+01:00  INFO 27320 --- [config-server] [           main] o.s.cloud.context.scope.GenericScope     : BeanFactory id=fc3575ec-f25f-3ebd-bb34-5b19f79bc114
+2026-04-24T20:53:17.658+01:00  INFO 27320 --- [config-server] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8888 (http)
+2026-04-24T20:53:17.681+01:00  INFO 27320 --- [config-server] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-04-24T20:53:17.683+01:00  INFO 27320 --- [config-server] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.31]
+2026-04-24T20:53:17.754+01:00  INFO 27320 --- [config-server] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-04-24T20:53:17.756+01:00  INFO 27320 --- [config-server] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 2948 ms
+2026-04-24T20:53:20.424+01:00  INFO 27320 --- [config-server] [           main] o.s.cloud.commons.util.InetUtils         : Cannot determine local hostname
+2026-04-24T20:53:20.736+01:00  INFO 27320 --- [config-server] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 4 endpoints beneath base path '/actuator'
+2026-04-24T20:53:20.844+01:00  WARN 27320 --- [config-server] [           main] ConfigServletWebServerApplicationContext : Exception encountered during context initialization - cancelling refresh attempt: org.springframework.context.ApplicationContextException: Failed to start bean 'webServerStartStop'
+2026-04-24T20:53:20.899+01:00  INFO 27320 --- [config-server] [           main] .s.b.a.l.ConditionEvaluationReportLogger : 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2026-04-24T20:53:20.946+01:00 ERROR 27320 --- [config-server] [           main] o.s.b.d.LoggingFailureAnalysisReporter   : 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Web server failed to start. Port 8888 was already in use.
+
+Action:
+
+Identify and stop the process that's listening on port 8888 or configure this application to listen on another port.
+

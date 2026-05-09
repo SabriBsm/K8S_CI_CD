@@ -1,0 +1,28 @@
+.field-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.field-row-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.req {
+  color: var(--color-danger);
+  margin-left: 2px;
+}
+
+textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+@media (max-width: 768px) {
+  .field-row-2,
+  .field-row-3 {
+    grid-template-columns: 1fr;
+  }
+}

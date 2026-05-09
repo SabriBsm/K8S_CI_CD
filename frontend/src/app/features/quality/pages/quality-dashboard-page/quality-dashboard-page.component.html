@@ -1,0 +1,209 @@
+<div class="quality-dashboard-page">
+  <div class="ps-page-card dashboard-error" *ngIf="!loading && errorMessage">
+    <div class="empty-state-row">
+      <i class="pi pi-exclamation-triangle"></i>
+      <span>{{ errorMessage }}</span>
+    </div>
+  </div>
+
+  <div class="ps-grid cols-4" *ngIf="!loading && stats.length; else statsState">
+    <div class="ps-stat-card" *ngFor="let stat of stats">
+      <div class="stat-icon" [style.background]="stat.iconBg">
+        <i [class]="stat.icon" [style.color]="stat.iconColor"></i>
+      </div>
+      <div style="flex:1">
+        <div class="stat-value">{{ stat.value }}</div>
+        <div class="stat-label">{{ stat.label }}</div>
+        <div class="stat-change positive">{{ stat.helper }}</div>
+      </div>
+    </div>
+  </div>
+
+  <ng-template #statsState>
+    <div class="ps-grid cols-4" *ngIf="loading; else emptyStats">
+      <div class="ps-page-card" *ngFor="let item of [1,2,3,4]">
+        <p-skeleton height="5rem"></p-skeleton>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #emptyStats>
+    <div class="ps-grid cols-4">
+      <div class="ps-page-card">
+        <div class="empty-state-row">
+          <i class="pi pi-chart-line"></i>
+          <span>No dashboard metrics available</span>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+
+  <div class="ps-page-card audit-heatmap-card">
+    <div class="card-header-bar heatmap-header">
+      <div>
+        <h4>Audit Heatmap</h4>
+        <div class="item-meta">Quality hotspots by concentration of findings, severity, overdue actions, and compliance.</div>
+      </div>
+      <p-dropdown
+        [options]="heatmapGroupOptions"
+        [(ngModel)]="heatmapGroupBy"
+        optionLabel="label"
+        optionValue="value"
+        styleClass="p-inputtext-sm heatmap-filter"
+        (onChange)="loadHeatmap()">
+      </p-dropdown>
+    </div>
+
+    <div class="heatmap-grid" *ngIf="!heatmapLoading && heatmapItems.length; else heatmapState">
+      <div
+        class="heatmap-tile"
+        *ngFor="let item of heatmapItems"
+        [ngClass]="getHotspotClass(item.hotspotLevel)">
+        <div class="heatmap-tile-header">
+          <div>
+            <div class="item-title">{{ item.groupName }}</div>
+            <div class="item-meta">{{ item.groupType }}</div>
+          </div>
+          <div class="hotspot-score">
+            <span>Score</span>
+            <strong>{{ item.hotspotScore }}</strong>
+          </div>
+        </div>
+
+        <div class="heatmap-level-row">
+          <span class="hotspot-badge" [ngClass]="getHotspotClass(item.hotspotLevel)">
+            {{ item.hotspotLevel }}
+          </span>
+          <span class="item-meta">
+            {{ item.averageComplianceScore !== null && item.averageComplianceScore !== undefined
+              ? (item.averageComplianceScore | number:'1.0-1') + '% compliance'
+              : 'No compliance score' }}
+          </span>
+        </div>
+
+        <div class="heatmap-metrics">
+          <div>
+            <span>{{ item.totalNonConformities }}</span>
+            <small>Total NC</small>
+          </div>
+          <div>
+            <span>{{ item.criticalCount }}</span>
+            <small>Critical</small>
+          </div>
+          <div>
+            <span>{{ item.highCount }}</span>
+            <small>High</small>
+          </div>
+          <div>
+            <span>{{ item.overdueCorrectiveActions }}</span>
+            <small>Overdue</small>
+          </div>
+        </div>
+
+        <p class="heatmap-explanation">{{ item.explanation }}</p>
+      </div>
+    </div>
+
+    <ng-template #heatmapState>
+      <div class="heatmap-grid" *ngIf="heatmapLoading; else emptyHeatmap">
+        <div class="heatmap-tile heatmap-loading" *ngFor="let item of [1,2,3]">
+          <p-skeleton height="8rem"></p-skeleton>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-template #emptyHeatmap>
+      <div class="empty-state-row">
+        <i class="pi pi-th-large"></i>
+        <span>No audit heatmap data available</span>
+      </div>
+    </ng-template>
+  </div>
+
+  <div class="quality-panels">
+    <div class="ps-page-card">
+      <div class="card-header-bar">
+        <h4>Recent Audits</h4>
+        <a routerLink="/quality/audits" class="view-all">View all <i class="pi pi-arrow-right"></i></a>
+      </div>
+
+      <div class="compact-list" *ngIf="audits.length; else emptyAudits">
+        <div class="compact-row" *ngFor="let audit of audits">
+          <div>
+            <div class="item-title">{{ audit.title }}</div>
+            <div class="item-meta">{{ audit.project?.name || 'No project' }} • {{ audit.auditType }}</div>
+          </div>
+          <div class="item-side">
+            <span class="badge" [ngClass]="getStatusClass(audit.status)">{{ audit.status.split('_').join(' ') }}</span>
+            <span class="item-metric">{{ audit.complianceRate || 0 }}%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ps-page-card">
+      <div class="card-header-bar">
+        <h4>Recent Non-Conformities</h4>
+        <a routerLink="/quality/non-conformities" class="view-all">View all <i class="pi pi-arrow-right"></i></a>
+      </div>
+
+      <div class="compact-list" *ngIf="nonConformities.length; else emptyNc">
+        <div class="compact-row" *ngFor="let item of nonConformities">
+          <div>
+            <div class="item-title">{{ item.referenceCode }}</div>
+            <div class="item-meta">{{ item.title }}</div>
+          </div>
+          <div class="item-side">
+            <span class="badge" [ngClass]="getStatusClass(item.status)">{{ item.status }}</span>
+            <span class="severity">{{ item.severity }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ps-page-card">
+    <div class="card-header-bar">
+      <h4>Corrective Action Queue</h4>
+      <a routerLink="/quality/corrective-actions" class="view-all">Open queue <i class="pi pi-arrow-right"></i></a>
+    </div>
+
+    <p-table [value]="correctiveActions" [rowHover]="true" responsiveLayout="scroll" styleClass="p-datatable-sm">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Action</th>
+          <th>Assigned To</th>
+          <th>Status</th>
+          <th>Priority</th>
+          <th>Due Date</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-action>
+        <tr>
+          <td>
+            <div class="item-title">{{ action.title }}</div>
+            <div class="item-meta">{{ action.nonConformity?.referenceCode || 'Linked finding unavailable' }}</div>
+          </td>
+          <td>{{ action.assignedTo?.firstName }} {{ action.assignedTo?.lastName }}</td>
+          <td><span class="badge" [ngClass]="getStatusClass(action.status)">{{ action.status }}</span></td>
+          <td><span class="badge" [ngClass]="'priority-' + action.priority.toLowerCase()">{{ action.priority }}</span></td>
+          <td>{{ action.dueDate ? (action.dueDate | date:'MMM d, y') : 'Not set' }}</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <ng-template #emptyAudits>
+    <div class="empty-state-row">
+      <i class="pi pi-verified"></i>
+      <span>No audits available</span>
+    </div>
+  </ng-template>
+
+  <ng-template #emptyNc>
+    <div class="empty-state-row">
+      <i class="pi pi-exclamation-circle"></i>
+      <span>No non-conformities available</span>
+    </div>
+  </ng-template>
+</div>

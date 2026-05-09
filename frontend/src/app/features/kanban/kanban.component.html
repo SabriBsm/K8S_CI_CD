@@ -1,0 +1,12 @@
+<div class="coming-soon-overlay">
+  <i [class]="icon + ' coming-soon-icon'"></i>
+  <h3>{{ title }}</h3>
+  <p>{{ desc }}</p>
+  <div class="progress-wrapper">
+    <label>Development progress — {{ progress }}%</label>
+    <p-progressBar [value]="progress" [showValue]="false"></p-progressBar>
+  </div>
+  <div style="margin-top:1.5rem;display:flex;gap:0.75rem;">
+    <button pButton icon="pi pi-bell" label="Notify me when ready" class="p-button-outlined p-button-sm"></button>
+  </div>
+</div>

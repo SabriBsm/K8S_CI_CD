@@ -1,0 +1,9 @@
+
+> plansync-gemini-api@1.0.0 start
+> node src/server.js
+
+◇ injected env (4) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+Using Gemini model: gemini-2.5-flash-lite
+Gemini AI running on port 3000
+[2026-04-28T13:01:54.510Z] Gemini API server listening on port 3000
+PS C:\Users\MSI\Downloads\integration\integration\backend\gemini-express-api> 

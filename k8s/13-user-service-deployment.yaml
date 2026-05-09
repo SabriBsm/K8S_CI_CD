@@ -1,0 +1,129 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+  namespace: plansync
+spec:
+  revisionHistoryLimit: 3
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      labels:
+        app: user-service
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - mysql
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: user-service
+          image: sabriboussami/plansync-user-service:2026-05-09-corsfix
+          ports:
+            - containerPort: 8079
+          env:
+            - name: SPRING_CONFIG_IMPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: plansync-app-config
+                  key: SPRING_CONFIG_IMPORT
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: "http://eureka-server:8761/eureka/"
+            - name: DB_HOST
+              value: "mysql"
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: plansync-app-config
+                  key: DB_PORT
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: plansync-app-config
+                  key: DB_NAME
+            - name: DB_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: plansync-app-config
+                  key: DB_USERNAME
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: plansync-secrets
+                  key: db-password
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: plansync-secrets
+                  key: jwt-secret
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: plansync-secrets
+                  key: smtp-password
+            - name: MANAGEMENT_HEALTH_MAIL_ENABLED
+              value: "false"
+            - name: APP_AVATAR_PUBLIC_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: plansync-app-config
+                  key: APP_AVATAR_PUBLIC_BASE_URL
+            - name: APP_FRONTEND_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: plansync-app-config
+                  key: APP_FRONTEND_URL
+            - name: APP_CORS_ALLOWED_ORIGINS
+              valueFrom:
+                configMapKeyRef:
+                  name: plansync-app-config
+                  key: APP_CORS_ALLOWED_ORIGINS
+          volumeMounts:
+            - name: avatars-storage
+              mountPath: /app/uploads/avatars
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "512Mi"
+            limits:
+              cpu: "500m"
+              memory: "768Mi"
+          startupProbe:
+            tcpSocket:
+              port: 8079
+            initialDelaySeconds: 90
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8079
+            initialDelaySeconds: 180
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8079
+            initialDelaySeconds: 300
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 5
+      volumes:
+        - name: avatars-storage
+          persistentVolumeClaim:
+            claimName: avatars-pvc

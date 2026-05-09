@@ -1,0 +1,79 @@
+<div class="quality-page">
+  <div class="section-header">
+    <div>
+      <h3>Quality Audits</h3>
+      <p>Monitor audit execution, compliance rates, and close completed assessments.</p>
+    </div>
+    <div class="section-actions">
+      <p-dropdown
+        [options]="sortByOptions"
+        [(ngModel)]="selectedSortBy"
+        optionLabel="label"
+        optionValue="value"
+        styleClass="p-inputtext-sm sort-dropdown"
+        (onChange)="onSortChange()">
+      </p-dropdown>
+      <p-dropdown
+        [options]="sortDirOptions"
+        [(ngModel)]="selectedSortDir"
+        optionLabel="label"
+        optionValue="value"
+        styleClass="p-inputtext-sm sort-dropdown"
+        (onChange)="onSortChange()">
+      </p-dropdown>
+      <button pButton pRipple icon="pi pi-refresh" label="Refresh" class="p-button-sm p-button-outlined" (click)="loadAudits()"></button>
+    </div>
+  </div>
+
+  <div class="ps-page-card">
+    <p-table [value]="audits" [loading]="loading" [rowHover]="true" responsiveLayout="scroll" styleClass="p-datatable-sm">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Audit</th>
+          <th>Project</th>
+          <th>Status</th>
+          <th>Auditor</th>
+          <th>Planned</th>
+          <th>Compliance</th>
+          <th>Score</th>
+          <th style="width: 10rem; text-align: center;">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-audit>
+        <tr>
+          <td>
+            <div class="item-title">{{ audit.title }}</div>
+            <div class="item-meta">{{ audit.auditType }} audit</div>
+          </td>
+          <td>{{ audit.project?.name || 'No project' }}</td>
+          <td><span class="badge" [ngClass]="getStatusClass(audit.status)">{{ audit.status.split('_').join(' ') }}</span></td>
+          <td>{{ audit.auditor?.firstName }} {{ audit.auditor?.lastName }}</td>
+          <td>{{ audit.plannedDate ? (audit.plannedDate | date:'MMM d, y') : 'Not scheduled' }}</td>
+          <td>{{ audit.complianceRate || 0 }}%</td>
+          <td>{{ audit.score || 0 }}%</td>
+          <td>
+            <div class="action-btns">
+              <button
+                pButton
+                pRipple
+                icon="pi pi-shield"
+                class="p-button-text p-button-sm"
+                [pTooltip]="audit.status === 'IN_PROGRESS' ? 'Open audit execution' : 'Verify identity to start'"
+                (click)="verifyIdentityToStart(audit)">
+              </button>
+              <button
+                pButton
+                pRipple
+                icon="pi pi-check"
+                class="p-button-text p-button-sm"
+                [disabled]="audit.status === 'COMPLETED' || audit.status === 'CLOSED'"
+                pTooltip="Close audit"
+                (click)="closeAudit(audit)">
+              </button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>

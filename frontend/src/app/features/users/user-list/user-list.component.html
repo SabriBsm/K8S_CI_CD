@@ -1,0 +1,156 @@
+<div class="users-page">
+  <!-- Header -->
+  <div class="ps-page-header">
+    <div class="header-title">
+      <h2>User Management</h2>
+      <p>Manage team members, roles, and access control</p>
+    </div>
+    <div class="header-actions">
+      <button pButton pRipple icon="pi pi-user-plus" label="Add User" class="p-button-sm" (click)="openNewUser()"></button>
+    </div>
+  </div>
+
+  <!-- Table Card -->
+  <div class="ps-page-card">
+    <!-- Toolbar -->
+    <div class="table-toolbar">
+      <span class="p-input-icon-left">
+        <i class="pi pi-search"></i>
+        <input pInputText type="text" placeholder="Search users..." class="search-input" (input)="onSearch($event)" />
+      </span>
+      <div class="toolbar-right">
+        <span class="total-label">{{ users.length }} users</span>
+        <button pButton icon="pi pi-refresh" class="p-button-text p-button-sm" pTooltip="Refresh" (click)="loadUsers()"></button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <p-table
+      #dt
+      [value]="users"
+      [loading]="loading"
+      [rows]="rows"
+      [paginator]="true"
+      [globalFilterFields]="['firstName','lastName','email','role','status']"
+      [rowHover]="true"
+      styleClass="p-datatable-sm"
+      responsiveLayout="scroll">
+
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width:3rem"></th>
+          <th pSortableColumn="firstName">Name <p-sortIcon field="firstName"></p-sortIcon></th>
+          <th pSortableColumn="email">Email <p-sortIcon field="email"></p-sortIcon></th>
+          <th pSortableColumn="role">Role <p-sortIcon field="role"></p-sortIcon></th>
+          <th pSortableColumn="status">Status <p-sortIcon field="status"></p-sortIcon></th>
+          <th pSortableColumn="lastLoginAt">Last Login <p-sortIcon field="lastLoginAt"></p-sortIcon></th>
+          <th pSortableColumn="totalAppUsageSeconds">Time Spent <p-sortIcon field="totalAppUsageSeconds"></p-sortIcon></th>
+          <th style="width:8rem; text-align:center">Actions</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-user>
+        <tr>
+          <!-- Avatar -->
+          <td>
+            <div class="ps-avatar ps-avatar-sm">{{ getInitials(user) }}</div>
+          </td>
+
+          <!-- Name + job title -->
+          <td>
+            <div class="user-name-cell">
+              <span class="user-full-name">{{ user.firstName }} {{ user.lastName }}</span>
+              <span class="user-job" *ngIf="user.jobTitle">{{ user.jobTitle }}</span>
+            </div>
+          </td>
+
+          <!-- Email -->
+          <td>
+            <span class="email-cell">{{ user.email }}</span>
+          </td>
+
+          <!-- Role -->
+          <td>
+            <span class="badge" [ngClass]="getRoleClass(user.role)">{{ getRoleLabel(user.role) }}</span>
+          </td>
+
+          <!-- Status -->
+          <td>
+            <span class="badge" [ngClass]="getStatusClass(user.status)">{{ user.status | titlecase }}</span>
+          </td>
+
+
+
+          <!-- Last login -->
+          <td>
+            <span class="date-cell">{{ user.lastLoginAt ? (user.lastLoginAt | date:'MMM d, y, HH:mm') : 'Never' }}</span>
+          </td>
+
+          <!-- Time spent -->
+          <td>
+            <span class="date-cell">{{ formatUsage(user.totalAppUsageSeconds) }}</span>
+          </td>
+
+          <!-- Actions -->
+          <td>
+            <div class="action-btns">
+              <button pButton pRipple icon="pi pi-send" class="p-button-text p-button-sm p-button-info"
+                pTooltip="Notify" tooltipPosition="top" (click)="openNotifyDialog(user)"></button>
+              <button pButton pRipple icon="pi pi-pencil" class="p-button-text p-button-sm p-button-secondary"
+                pTooltip="Edit" tooltipPosition="top" (click)="editUser(user)"></button>
+              <button pButton pRipple icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger"
+                pTooltip="Delete" tooltipPosition="top" (click)="deleteUser(user)"></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="9">
+            <div class="empty-state-row">
+              <i class="pi pi-users"></i>
+              <span>No users found</span>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- User Form Dialog -->
+<app-user-form
+  [visible]="showFormDialog"
+  [user]="selectedUser"
+  (visibleChange)="showFormDialog = $event"
+  (saved)="onFormSaved($event)">
+</app-user-form>
+
+<p-dialog
+  header="Notify user"
+  [(visible)]="showNotifyDialog"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{width: '420px'}"
+  (onHide)="closeNotifyDialog()">
+  <div *ngIf="notifyTargetUser" class="notify-dialog-body">
+    <p>
+      Send onboarding credentials to <strong>{{ notifyTargetUser.firstName }} {{ notifyTargetUser.lastName }}</strong>
+      ({{ notifyTargetUser.email }}).
+    </p>
+
+    <div class="form-field" style="margin-top: 1rem;">
+      <label>Temporary password</label>
+      <input pInputText [(ngModel)]="notifyTemporaryPassword" placeholder="Minimum 8 characters" class="w-full" />
+      <small class="text-muted">This password will be included in the onboarding email.</small>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button pButton type="button" label="Cancel" class="p-button-text" (click)="closeNotifyDialog()"></button>
+    <button pButton type="button" label="Send email" icon="pi pi-send" class="p-button-info"
+            [loading]="notifyLoading" (click)="sendUserNotification()"></button>
+  </ng-template>
+</p-dialog>

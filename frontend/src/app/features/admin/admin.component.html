@@ -1,0 +1,28 @@
+<section class="admin-shell">
+  <p-card styleClass="admin-hero-card">
+    <div class="admin-hero">
+      <div>
+        <p class="eyebrow">Administration</p>
+        <h2>Users control center</h2>
+        <p class="subtitle">
+          Manage users, roles, and account status from one dedicated admin workspace.
+        </p>
+      </div>
+
+      <div class="admin-user-chip">
+        <i class="pi pi-shield"></i>
+        <div>
+          <strong>{{ getDisplayName() }}</strong>
+          <span>{{ currentUser?.email }}</span>
+        </div>
+      </div>
+    </div>
+  </p-card>
+
+  <p-tabMenu [model]="tabs" styleClass="admin-tabmenu"></p-tabMenu>
+
+  <div class="admin-content">
+    <router-outlet></router-outlet>
+  </div>
+</section>
+

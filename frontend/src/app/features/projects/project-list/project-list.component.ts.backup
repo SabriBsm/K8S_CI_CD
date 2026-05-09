@@ -1,0 +1,416 @@
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { ProjectService, Project } from '../../../core/services/project.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { MessageService } from 'primeng/api';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+
+@Component({
+  selector: 'app-project-list',
+  templateUrl: './project-list.component.html',
+  styleUrl: './project-list.component.scss'
+})
+export class ProjectListComponent implements OnInit, OnDestroy {
+  projects: Project[] = [];
+  loading = false;
+  selectedProject: Project | null = null;
+  displayDetailDialog = false;
+  displayCreateDialog = false;
+  displayEditDialog = false;
+  displayDeleteDialog = false;
+  private destroy$ = new Subject<void>();
+
+  searchTerm = '';
+  statusFilter = '';
+  statusOptions = [
+    { label: 'All Status', value: '' },
+    { label: 'Planned', value: 'PLANNED' },
+    { label: 'In Progress', value: 'IN_PROGRESS' },
+    { label: 'Completed', value: 'COMPLETED' },
+    { label: 'On Hold', value: 'ON_HOLD' },
+    { label: 'Cancelled', value: 'CANCELLED' }
+  ];
+
+  newProject: Partial<Project> = {
+    name: '',
+    description: '',
+    objectives: '',
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: '',
+    visibility: 'PRIVATE'
+  };
+
+  touchedFields: { [key: string]: boolean } = {
+    name: false,
+    description: false,
+    objectives: false,
+    startDate: false,
+    endDate: false
+  };
+
+  constructor(
+    private projectService: ProjectService,
+    private authService: AuthService,
+    private messageService: MessageService
+  ) {}
+
+  ngOnInit(): void {
+    this.loadProjects();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  loadProjects(): void {
+    this.loading = true;
+    const currentUser = this.authService.getCurrentUser();
+
+    if (!currentUser) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'User not authenticated'
+      });
+      this.loading = false;
+      return;
+    }
+
+    this.projectService.getProjectsByUser(currentUser.id.toString())
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (data) => {
+          this.projects = data;
+          this.loading = false;
+        },
+        error: (error) => {
+          console.error('Error loading projects', error);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to load projects'
+          });
+          this.loading = false;
+        }
+      });
+  }
+
+  performSearch(): void {
+    if (!this.searchTerm && !this.statusFilter) {
+      this.loadProjects();
+      return;
+    }
+
+    this.loading = true;
+    this.projectService.searchProjects(this.searchTerm, this.statusFilter)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (data) => {
+          this.projects = data;
+          this.loading = false;
+        },
+        error: (error) => {
+          console.error('Error searching projects', error);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to search projects'
+          });
+          this.loading = false;
+        }
+      });
+  }
+
+  onStatusFilterChange(): void {
+    this.performSearch();
+  }
+
+  clearFilters(): void {
+    this.searchTerm = '';
+    this.statusFilter = '';
+    this.loadProjects();
+  }
+
+  isProjectManager(project: Project): boolean {
+    const currentUser = this.authService.getCurrentUser();
+    return currentUser && project.projectManagerId === currentUser.id.toString();
+  }
+
+  canEdit(project: Project): boolean {
+    return this.isProjectManager(project);
+  }
+
+  canDelete(project: Project): boolean {
+    return this.isProjectManager(project) && project.status !== 'COMPLETED';
+  }
+
+  formatDate(date: string): string {
+    if (!date) return '-';
+    return new Date(date).toLocaleDateString();
+  }
+
+  onSelectProject(project: Project): void {
+    this.selectedProject = project;
+    this.displayDetailDialog = true;
+  }
+
+  openCreateDialog(): void {
+    const today = new Date().toISOString().split('T')[0];
+    const futureDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    this.newProject = {
+      name: '',
+      description: '',
+      objectives: '',
+      startDate: today,
+      endDate: futureDate,
+      visibility: 'PRIVATE'
+    };
+    this.touchedFields = { name: false, description: false, objectives: false, startDate: false, endDate: false };
+    this.displayCreateDialog = true;
+  }
+
+  openEditDialog(project: Project): void {
+    this.selectedProject = project;
+    this.newProject = { ...project };
+    this.touchedFields = { name: false, description: false, objectives: false, startDate: false, endDate: false };
+    this.displayEditDialog = true;
+  }
+
+  openDeleteDialog(project: Project): void {
+    this.selectedProject = project;
+    this.displayDeleteDialog = true;
+  }
+
+  createProject(): void {
+    if (!this.isFormValid()) return;
+
+    this.loading = true;
+    this.projectService.createProject(this.newProject)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Success',
+            detail: 'Project created successfully'
+          });
+          this.displayCreateDialog = false;
+          this.loadProjects();
+        },
+        error: (error) => {
+          console.error('Error creating project', error);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: error.error?.message || error.error?.name || 'Failed to create project'
+          });
+          this.loading = false;
+        }
+      });
+  }
+
+  updateProject(): void {
+    if (!this.selectedProject) return;
+
+    if (!this.isFormValid()) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Validation Error',
+        detail: 'Please fix validation errors'
+      });
+      return;
+    }
+
+    this.loading = true;
+    this.projectService.updateProject(this.selectedProject.id, this.newProject)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Success',
+            detail: 'Project updated successfully'
+          });
+          this.displayEditDialog = false;
+          this.displayDetailDialog = false;
+          this.loadProjects();
+        },
+        error: (error) => {
+          console.error('Error updating project', error);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: error.error?.message || 'Failed to update project'
+          });
+          this.loading = false;
+        }
+      });
+  }
+
+  confirmDelete(): void {
+    if (!this.selectedProject) return;
+
+    this.loading = true;
+    this.projectService.deleteProject(this.selectedProject.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Success',
+            detail: 'Project deleted successfully'
+          });
+          this.displayDeleteDialog = false;
+          this.displayDetailDialog = false;
+          this.loadProjects();
+        },
+        error: (error) => {
+          console.error('Error deleting project', error);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: error.error?.message || 'Failed to delete project'
+          });
+          this.loading = false;
+        }
+      });
+  }
+
+  cancelCreate(): void {
+    this.displayCreateDialog = false;
+  }
+
+  cancelEdit(): void {
+    this.displayEditDialog = false;
+  }
+
+  onFieldTouched(fieldName: string): void {
+    this.touchedFields[fieldName] = true;
+  }
+
+  getProjectNameError(): string {
+    if (!this.touchedFields['name']) return '';
+
+    const name = this.newProject.name ? this.newProject.name.trim() : '';
+
+    if (!name) {
+      return 'Project name is required';
+    }
+    if (name.length < 3) {
+      return 'Project name must be at least 3 characters';
+    }
+    if (name.length > 100) {
+      return 'Project name cannot exceed 100 characters';
+    }
+    const pattern = /^[a-zA-Z0-9\s\-_,.:;()&]+$/;
+    if (!pattern.test(name)) {
+      return 'Invalid characters. Only letters, numbers, and - _ , . : ; ( ) & are allowed';
+    }
+    return '';
+  }
+
+  getDescriptionError(): string {
+    if (!this.touchedFields['description']) return '';
+
+    if (this.newProject.description && this.newProject.description.length > 500) {
+      return `Description cannot exceed 500 characters (${this.newProject.description.length}/500)`;
+    }
+    return '';
+  }
+
+  getObjectivesError(): string {
+    if (!this.touchedFields['objectives']) return '';
+
+    if (this.newProject.objectives && this.newProject.objectives.length > 1000) {
+      return `Objectives cannot exceed 1000 characters (${this.newProject.objectives.length}/1000)`;
+    }
+    return '';
+  }
+
+  getStartDateError(): string {
+    if (!this.touchedFields['startDate']) return '';
+
+    if (!this.newProject.startDate) {
+      return 'Start Date is required';
+    }
+    return '';
+  }
+
+  getEndDateError(): string {
+    if (!this.touchedFields['endDate']) return '';
+
+    if (!this.newProject.endDate) {
+      return 'End Date is required';
+    }
+    if (this.newProject.startDate && this.newProject.endDate) {
+      const startDate = new Date(this.newProject.startDate as string);
+      const endDate = new Date(this.newProject.endDate as string);
+      if (endDate <= startDate) {
+        return 'End Date must be after Start Date';
+      }
+    }
+    return '';
+  }
+
+  isFormValid(): boolean {
+    const name = this.newProject.name ? this.newProject.name.trim() : '';
+    if (!name || name.length < 3 || name.length > 100) {
+      return false;
+    }
+
+    const pattern = /^[a-zA-Z0-9\s\-_,.:;()&]+$/;
+    if (!pattern.test(name)) {
+      return false;
+    }
+
+    if (this.newProject.description && this.newProject.description.length > 500) {
+      return false;
+    }
+
+    if (this.newProject.objectives && this.newProject.objectives.length > 1000) {
+      return false;
+    }
+
+    if (!this.newProject.startDate || !this.newProject.endDate) {
+      return false;
+    }
+
+    const startDate = new Date(this.newProject.startDate as string);
+    const endDate = new Date(this.newProject.endDate as string);
+    if (endDate <= startDate) {
+      return false;
+    }
+
+    return true;
+  }
+
+  getStatusSeverity(status: string): 'success' | 'secondary' | 'info' | 'warning' | 'danger' | 'contrast' | undefined {
+    switch (status) {
+      case 'COMPLETED':
+        return 'success';
+      case 'IN_PROGRESS':
+        return 'info';
+      case 'ON_HOLD':
+        return 'warning';
+      case 'CANCELLED':
+        return 'danger';
+      case 'PLANNED':
+      default:
+        return 'secondary';
+    }
+  }
+
+  getStatusLabel(status: string): string {
+    const labels: { [key: string]: string } = {
+      'PLANNED': 'Planned',
+      'IN_PROGRESS': 'In Progress',
+      'COMPLETED': 'Completed',
+      'ON_HOLD': 'On Hold',
+      'CANCELLED': 'Cancelled'
+    };
+    return labels[status] || status;
+  }
+}
+

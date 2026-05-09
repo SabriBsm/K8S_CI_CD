@@ -1,0 +1,95 @@
+<header class="topbar">
+  <div class="topbar-left">
+    <button
+      pButton
+      icon="pi pi-bars"
+      class="p-button-text p-button-sm toggle-btn"
+      (click)="toggleSidebar.emit()">
+    </button>
+    <h4 class="page-title">{{ getPageTitle() }}</h4>
+  </div>
+
+  <div class="topbar-right">
+    <!-- Search -->
+    <span class="p-input-icon-left search-wrapper">
+      <i class="pi pi-search"></i>
+      <input pInputText type="text" placeholder="Search..." class="search-input" />
+    </span>
+
+    <!-- Notifications -->
+    <button
+      *ngIf="notificationCount > 0; else bellWithoutBadge"
+      pButton
+      icon="pi pi-bell"
+      class="p-button-text p-button-sm icon-btn"
+      pBadge
+      [value]="getNotificationBadgeValue()"
+      badgeClass="topbar-notification-badge p-badge-danger"
+      (click)="notificationPanel.toggle($event)">
+    </button>
+    <ng-template #bellWithoutBadge>
+      <button
+        pButton
+        icon="pi pi-bell"
+        class="p-button-text p-button-sm icon-btn"
+        (click)="notificationPanel.toggle($event)">
+      </button>
+    </ng-template>
+
+    <p-overlayPanel #notificationPanel [dismissable]="true" [showCloseIcon]="true" styleClass="topbar-notification-panel" (onShow)="refreshUnreadNotifications()">
+      <ng-template pTemplate>
+        <div class="notification-panel-header">
+          <div>
+            <h5>Notifications</h5>
+            <small>{{ notificationCount }} unread</small>
+          </div>
+          <button *ngIf="notificationCount > 0" pButton type="button" label="Mark all as read" class="p-button-text p-button-sm" (click)="markAllNotificationsAsRead()"></button>
+        </div>
+
+        <div *ngIf="loadingNotifications" class="notification-panel-loading">
+          <i class="pi pi-spin pi-spinner"></i>
+          <span>Loading notifications...</span>
+        </div>
+
+        <ng-container *ngIf="!loadingNotifications">
+          <div *ngIf="unreadNotifications.length > 0; else emptyNotifications" class="notification-list">
+            <div *ngFor="let notification of unreadNotifications" class="notification-item">
+              <div class="notification-item-content">
+                <div class="notification-item-title">{{ notification.project?.name || 'Project' }}</div>
+                <div class="notification-item-message">{{ getNotificationLabel(notification) }}</div>
+                <small>{{ notification.createdAt | date:'short' }}</small>
+              </div>
+              <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-sm" pTooltip="Mark as read" (click)="markNotificationAsRead(notification)"></button>
+            </div>
+          </div>
+          <ng-template #emptyNotifications>
+            <div class="notification-panel-empty">
+              <i class="pi pi-bell"></i>
+              <p>No unread notifications</p>
+            </div>
+          </ng-template>
+        </ng-container>
+      </ng-template>
+    </p-overlayPanel>
+
+    <!-- User menu -->
+    <div class="user-menu-trigger" (click)="userMenu.toggle($event)">
+      <div class="ps-avatar ps-avatar-sm user-avatar" *ngIf="currentUser?.avatarUrl; else topbarInitialsAvatar">
+        <img [src]="currentUser?.avatarUrl" alt="Profile photo" />
+      </div>
+      <ng-template #topbarInitialsAvatar>
+        <div class="ps-avatar ps-avatar-sm user-avatar">{{ getUserInitials() }}</div>
+      </ng-template>
+      <div class="user-info" style="display:flex;flex-direction:column;align-items:flex-start">
+        <div class="user-name-row">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span class="user-name-top">{{ currentUser?.firstName }} {{ currentUser?.lastName }}</span>
+        </div>
+        <span class="user-role-top">{{ currentUser?.role }}</span>
+      </div>
+      <i class="pi pi-chevron-down chevron-icon"></i>
+    </div>
+
+    <p-menu #userMenu [model]="userMenuItems" [popup]="true"></p-menu>
+  </div>
+</header>

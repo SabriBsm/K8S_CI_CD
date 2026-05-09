@@ -1,0 +1,79 @@
+<section class="ai-chat">
+  <header class="ai-chat__header">
+    <div>
+      <p class="ai-chat__eyebrow">GEMINI ASSISTANT</p>
+      <h2>PlanSync Finance Copilot</h2>
+      <p>Real-time financial chat powered by Gemini. Ask questions or upload a PDF report.</p>
+    </div>
+  </header>
+
+  <p class="ai-chat__error" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+  <div class="ai-chat__body" #scrollContainer>
+    <section class="ai-chat__empty" *ngIf="!messages.length">
+      <div class="ai-chat__avatar">AI</div>
+      <div class="ai-chat__empty-card">
+        <h3>Start a real financial conversation</h3>
+        <p>Try asking for a cost estimate, checking whether a budget is acceptable, or uploading a financial PDF for Gemini analysis.</p>
+      </div>
+    </section>
+
+    <article class="chat-row" *ngFor="let message of messages" [class.chat-row--user]="message.sender === 'user'">
+      <div class="chat-row__avatar" *ngIf="message.sender === 'ai'">AI</div>
+      <div class="chat-bubble" [class.chat-bubble--user]="message.sender === 'user'">
+        <p>{{ message.text }}</p>
+
+        <div class="chat-bubble__file" *ngIf="message.fileName">
+          <i class="pi pi-file-pdf"></i>
+          <span>{{ message.fileName }}</span>
+        </div>
+
+        <div class="chat-bubble__meta" *ngIf="message.status || message.variance !== undefined || message.budget !== undefined || message.expenses !== undefined">
+          <span
+            class="status-badge"
+            *ngIf="message.status"
+            [class.status-badge--good]="isAcceptable(message.status)"
+            [class.status-badge--bad]="!isAcceptable(message.status)">
+            {{ message.status }}
+          </span>
+          <span *ngIf="message.variance !== null && message.variance !== undefined">
+            Variance {{ message.variance | currency:'USD':'symbol':'1.0-0' }}
+          </span>
+          <span *ngIf="message.budget !== null && message.budget !== undefined">
+            Budget {{ message.budget | currency:'USD':'symbol':'1.0-0' }}
+          </span>
+          <span *ngIf="message.expenses !== null && message.expenses !== undefined">
+            Expenses {{ message.expenses | currency:'USD':'symbol':'1.0-0' }}
+          </span>
+        </div>
+
+        <ul class="chat-bubble__recommendations" *ngIf="message.recommendations?.length">
+          <li *ngFor="let recommendation of message.recommendations">{{ recommendation }}</li>
+        </ul>
+
+        <ul class="chat-bubble__recommendations" *ngIf="message.risks?.length">
+          <li *ngFor="let risk of message.risks">Risk: {{ risk }}</li>
+        </ul>
+      </div>
+    </article>
+  </div>
+
+  <form class="ai-chat__composer" [formGroup]="chatForm" (ngSubmit)="send()">
+    <div class="ai-chat__inputs">
+      <textarea
+        rows="3"
+        formControlName="message"
+        placeholder="Message Gemini about project cost, budget analysis, or report review..."></textarea>
+    </div>
+
+    <div class="ai-chat__actions">
+      <label class="upload-button">
+        <input type="file" accept="application/pdf" (change)="onPdfSelected($event)" [disabled]="isBusy" />
+        <i class="pi pi-upload"></i>
+        <span>{{ uploading ? 'Analyzing...' : 'Upload PDF' }}</span>
+      </label>
+
+      <button pButton type="submit" [label]="sending ? 'Sending...' : 'Send'" [disabled]="isBusy"></button>
+    </div>
+  </form>
+</section>

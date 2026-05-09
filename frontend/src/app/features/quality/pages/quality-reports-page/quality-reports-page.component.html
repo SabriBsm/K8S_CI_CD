@@ -1,0 +1,74 @@
+<div class="quality-page">
+  <div class="section-header">
+    <div>
+      <h3>Quality Reports</h3>
+      <p>Publish audit outcomes, review recommendations, and approve final reports.</p>
+    </div>
+    <div class="section-actions">
+      <p-dropdown
+        [options]="sortByOptions"
+        [(ngModel)]="selectedSortBy"
+        optionLabel="label"
+        optionValue="value"
+        styleClass="p-inputtext-sm sort-dropdown"
+        (onChange)="onSortChange()">
+      </p-dropdown>
+      <p-dropdown
+        [options]="sortDirOptions"
+        [(ngModel)]="selectedSortDir"
+        optionLabel="label"
+        optionValue="value"
+        styleClass="p-inputtext-sm sort-dropdown"
+        (onChange)="onSortChange()">
+      </p-dropdown>
+      <button pButton pRipple icon="pi pi-refresh" label="Refresh" class="p-button-sm p-button-outlined" (click)="loadReports()"></button>
+    </div>
+  </div>
+
+  <div class="ps-page-card">
+    <p-table [value]="reports" [loading]="loading" [rowHover]="true" responsiveLayout="scroll" styleClass="p-datatable-sm">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Report</th>
+          <th>Audit</th>
+          <th>Status</th>
+          <th>Score</th>
+          <th>Approved By</th>
+          <th>Document</th>
+          <th style="width: 7rem; text-align: center;">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-report>
+        <tr>
+          <td>
+            <div class="item-title">{{ report.title }}</div>
+            <div class="item-meta">{{ report.executiveSummary || 'No executive summary provided' }}</div>
+          </td>
+          <td>{{ report.qualityAudit?.title || 'No linked audit' }}</td>
+          <td><span class="badge" [ngClass]="getStatusClass(report.status)">{{ report.status }}</span></td>
+          <td>{{ report.complianceRate || report.overallScore || 0 }}%</td>
+          <td>{{ report.approvedBy ? (report.approvedBy.firstName + ' ' + report.approvedBy.lastName) : 'Pending approval' }}</td>
+          <td>
+            <a *ngIf="report.reportFileUrl; else noDocument" [href]="report.reportFileUrl" target="_blank" rel="noreferrer" class="doc-link">
+              Open file
+            </a>
+            <ng-template #noDocument>Not attached</ng-template>
+          </td>
+          <td>
+            <div class="action-btns">
+              <button
+                pButton
+                pRipple
+                icon="pi pi-check"
+                class="p-button-text p-button-sm"
+                [disabled]="report.status === 'APPROVED'"
+                pTooltip="Approve report"
+                (click)="approve(report)">
+              </button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>

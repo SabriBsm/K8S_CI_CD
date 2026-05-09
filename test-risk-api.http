@@ -1,0 +1,93 @@
+### Risk Service Integration Tests
+
+### Base URLs
+@riskUrl = http://localhost:8089/api
+@projectUrl = http://localhost:8082/api
+@userUrl = http://localhost:8079/api
+
+### Headers
+@json = Content-Type: application/json
+@userId = 1
+
+### Get all risks
+GET {{riskUrl}}/risks
+X-User-Id: {{userId}}
+
+### Get risks by project
+GET {{riskUrl}}/risks/project/1
+X-User-Id: {{userId}}
+
+### Create a new risk
+POST {{riskUrl}}/risks
+{{json}}
+X-User-Id: {{userId}}
+
+{
+  "projectId": 1,
+  "description": "Integration test risk",
+  "category": "Technical",
+  "probability": 0.5,
+  "impact": 0.8,
+  "status": "OPEN",
+  "mitigation": "Test mitigation plan",
+  "owner": "testuser"
+}
+
+### Get risk by ID
+GET {{riskUrl}}/risks/1
+X-User-Id: {{userId}}
+
+### Update risk
+PUT {{riskUrl}}/risks/1
+{{json}}
+X-User-Id: {{userId}}
+
+{
+  "projectId": 1,
+  "description": "Updated integration test risk",
+  "category": "Technical",
+  "probability": 0.6,
+  "impact": 0.7,
+  "status": "MITIGATED",
+  "mitigation": "Updated mitigation plan",
+  "owner": "testuser"
+}
+
+### Get risks by status
+GET {{riskUrl}}/risks/status/OPEN
+X-User-Id: {{userId}}
+
+### Get dashboard statistics
+GET {{riskUrl}}/statistics/dashboard
+X-User-Id: {{userId}}
+
+### Delete risk
+DELETE {{riskUrl}}/risks/1
+X-User-Id: {{userId}}
+
+### Get all projects for risk dropdown
+GET {{projectUrl}}/projects
+X-User-Id: {{userId}}
+
+### Get all mitigation plans
+GET {{riskUrl}}/mitigation-plans
+X-User-Id: {{userId}}
+
+### Get mitigations by risk ID
+GET {{riskUrl}}/mitigation-plans/by-risk/1
+X-User-Id: {{userId}}
+
+### Assign mitigation to risk
+PUT {{riskUrl}}/mitigation-plans/1/assign/1
+X-User-Id: {{userId}}
+
+### Evaluate mitigation effectiveness
+POST {{riskUrl}}/mitigation-plans/1/evaluate-effectiveness
+{{json}}
+X-User-Id: {{userId}}
+
+{
+  "effectiveness": 0.85,
+  "notes": "Test effectiveness evaluation"
+}
+

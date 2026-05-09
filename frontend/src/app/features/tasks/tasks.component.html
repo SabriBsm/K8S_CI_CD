@@ -1,0 +1,363 @@
+﻿<section class="tasks-page">
+  <div class="board-hero">
+    <button pButton type="button" icon="pi pi-arrow-left" label="Projects" class="p-button-text" (click)="goBackToProjects()"></button>
+
+    <div class="hero-copy">
+      <p class="eyebrow">Task board</p>
+      <h1>{{ project?.name || 'Loading project...' }}</h1>
+      <p>{{ project?.description }}</p>
+    </div>
+
+    <div class="hero-meta" *ngIf="project">
+      <div>
+        <strong>{{ project.taskCount || 0 }}</strong>
+        <span>Total tasks</span>
+      </div>
+      <div>
+        <strong>{{ project.completedTaskCount || 0 }}</strong>
+        <span>Completed</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <span class="p-input-icon-left field search-field">
+      <i class="pi pi-search"></i>
+      <input
+        pInputText
+        type="text"
+        [value]="query.search"
+        (input)="onSearch(($any($event.target)).value)"
+        placeholder="Search title or description" />
+    </span>
+
+    <p-dropdown
+      class="field"
+      [options]="statusOptions"
+      [ngModel]="query.status"
+      (onChange)="onStatusFilterChange($event.value)"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="Status">
+    </p-dropdown>
+
+    <p-dropdown
+      class="field"
+      [options]="sortOptions"
+      [ngModel]="query.sort"
+      (onChange)="onSortChange($event.value)"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="Sort by">
+    </p-dropdown>
+
+    <div class="toolbar-actions">
+      <button pButton type="button" icon="pi pi-filter-slash" class="p-button-outlined" label="Reset" (click)="resetFilters()"></button>
+      <button *ngIf="canCreateTask" pButton type="button" icon="pi pi-plus" label="Add task" (click)="openCreateDialog()"></button>
+    </div>
+  </div>
+
+  <div class="scope-banner">
+    <i class="pi pi-eye"></i>
+    <span>{{ visibilityMessage }}</span>
+  </div>
+
+  <div class="board-summary" *ngIf="taskPage">
+    <span>{{ taskPage.totalElements }} matching tasks</span>
+    <span>Page {{ taskPage.number + 1 }} of {{ taskPage.totalPages || 1 }}</span>
+  </div>
+
+  <div class="kanban-grid" *ngIf="!loading; else loadingBoard">
+    <article class="kanban-column" *ngFor="let status of statuses">
+      <header class="column-header">
+        <div>
+          <p>{{ statusLabels[status] }}</p>
+          <strong>{{ tasksByStatus[status].length }}</strong>
+        </div>
+        <button
+          *ngIf="canCreateTask"
+          pButton
+          type="button"
+          icon="pi pi-plus"
+          class="p-button-rounded p-button-text"
+          pTooltip="Add task to this column"
+          (click)="openCreateDialog(status)">
+        </button>
+      </header>
+
+      <div
+        class="column-body"
+        cdkDropList
+        [id]="connectedDropLists[statuses.indexOf(status)]"
+        [cdkDropListData]="tasksByStatus[status]"
+        [cdkDropListConnectedTo]="connectedDropLists"
+        [cdkDropListDisabled]="!canInteractWithBoard"
+        [cdkDropListEnterPredicate]="canEnterColumn"
+        (cdkDropListDropped)="onDrop($event, status)">
+
+        <div
+          class="task-card"
+          [ngClass]="getTaskCardClass(task)"
+          *ngFor="let task of tasksByStatus[status]; trackBy: trackByTaskId"
+          cdkDrag
+          [cdkDragData]="task"
+          [cdkDragDisabled]="!canDragTask(task)">
+
+          <div class="task-top">
+            <span class="priority-badge" [ngClass]="getPriorityClass(task.priority)">
+              {{ getPriorityLabel(task.priority) }}
+            </span>
+            <div class="task-actions" *ngIf="canManage">
+              <button pButton type="button" icon="pi pi-user-edit" class="p-button-text p-button-sm" pTooltip="Assign task" (click)="openAssignDialog(task)"></button>
+              <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" pTooltip="Edit task" (click)="openEditDialog(task)"></button>
+              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" pTooltip="Delete task" (click)="confirmDelete(task)"></button>
+            </div>
+          </div>
+
+          <h3>{{ task.title }}</h3>
+          <div class="deadline-alert" *ngIf="isTaskOverdue(task)">
+            <i class="pi pi-exclamation-triangle"></i>
+            <span>Deadline passed</span>
+          </div>
+          <div class="rendu-state" *ngIf="hasRendu(task)">
+            <i class="pi pi-paperclip"></i>
+            <span>Deliverable uploaded</span>
+          </div>
+          <p>{{ task.description || 'No description provided.' }}</p>
+
+          <div class="ai-actions" *ngIf="canAnalyzeTask(task)">
+            <button
+              pButton
+              type="button"
+              icon="pi pi-sparkles"
+              label="Analyze with AI"
+              class="ai-btn"
+              [loading]="analyzingTaskId === task.id"
+              [disabled]="!!analyzingTaskId"
+              (click)="analyzeTask(task)">
+            </button>
+          </div>
+
+          <div *ngIf="task.aiSuggestion" class="ai-box">
+            <span class="badge">AI Suggestion: {{ task.aiSuggestion }}</span>
+            <div class="score">Score: {{ task.aiScore }}%</div>
+            <div class="score" *ngIf="task.aiConfidence !== undefined">Confidence: {{ task.aiConfidence }}%</div>
+            <p class="explanation">{{ task.aiExplanation }}</p>
+          </div>
+
+          <div class="task-meta">
+            <span>
+              <i class="pi pi-user"></i>
+              {{ task.assigneeName || 'Unassigned' }}
+            </span>
+            <span>
+              <i class="pi pi-clock"></i>
+              {{ task.deadline ? (task.deadline | date:'short') : 'No deadline' }}
+            </span>
+            <span>
+              <i class="pi pi-calendar"></i>
+              {{ task.updatedAt | date:'MMM d, y' }}
+            </span>
+          </div>
+
+          <div class="task-footnote" *ngIf="roleHelperService.isTeamMember(role ?? currentUser?.role) && task.assigneeId !== currentUser?.id">
+            View only
+          </div>
+        </div>
+
+        <div class="empty-column" *ngIf="!tasksByStatus[status].length">
+          <i class="pi pi-inbox"></i>
+          <span>No tasks in {{ statusLabels[status] | lowercase }}.</span>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <ng-template #loadingBoard>
+    <div class="kanban-grid loading-grid">
+      <div class="kanban-column" *ngFor="let item of [1,2,3]">
+        <header class="column-header">
+          <p-skeleton width="8rem" height="1.4rem"></p-skeleton>
+          <p-skeleton shape="circle" size="2rem"></p-skeleton>
+        </header>
+        <div class="column-body">
+          <div class="task-card skeleton-card" *ngFor="let card of [1,2]">
+            <p-skeleton width="4rem" height="1.4rem"></p-skeleton>
+            <p-skeleton width="75%" height="1.5rem"></p-skeleton>
+            <p-skeleton width="100%" height="4rem"></p-skeleton>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+
+  <p-paginator
+    *ngIf="taskPage"
+    [rows]="taskPage.size"
+    [totalRecords]="taskPage.totalElements"
+    [first]="taskPage.number * taskPage.size"
+    (onPageChange)="onPageChange($event)">
+  </p-paginator>
+</section>
+
+<p-dialog
+  [(visible)]="taskDialogVisible"
+  (onHide)="closeTaskDialog()"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '42rem', maxWidth: '94vw' }"
+  styleClass="task-edit-dialog"
+  [header]="editingTask ? 'Edit task' : 'Create task'">
+
+  <form class="task-form" [formGroup]="taskForm" (ngSubmit)="saveTask()">
+    <label class="form-field">
+      <span class="field-label">Title</span>
+      <input pInputText formControlName="title" type="text" placeholder="Enter a clear task title" />
+      <small *ngIf="taskForm.get('title')?.invalid && taskForm.get('title')?.touched">Title must be at least 3 characters.</small>
+    </label>
+
+    <label class="form-field">
+      <span class="field-label">Description</span>
+      <textarea pInputTextarea formControlName="description" rows="4" placeholder="Describe expected outcome, scope, and constraints"></textarea>
+    </label>
+
+    <label class="form-field">
+      <span class="field-label">Deadline</span>
+      <input pInputText type="datetime-local" formControlName="deadline" />
+    </label>
+
+    <div
+      class="ai-priority-preview"
+      [ngClass]="getSuggestionSourceClass(aiPrioritySource)"
+      *ngIf="!editingTask && (aiPriorityLoading || aiPriorityPreview)">
+      <div class="preview-copy">
+        <span>AI Suggested Priority</span>
+        <small *ngIf="aiPriorityLoading">Analyzing...</small>
+        <small *ngIf="!aiPriorityLoading">{{ getSuggestionSourceLabel(aiPrioritySource) }}</small>
+      </div>
+
+      <span class="priority-badge" [ngClass]="getPriorityClass(aiPriorityPreview || 'MEDIUM')">
+        <ng-container *ngIf="!aiPriorityLoading; else analyzingPriority">
+          {{ getPriorityLabel(aiPriorityPreview || 'MEDIUM') }}
+        </ng-container>
+      </span>
+    </div>
+
+    <ng-template #analyzingPriority>
+      <span class="preview-loading">
+        <i class="pi pi-spin pi-spinner"></i>
+        Analyzing...
+      </span>
+    </ng-template>
+
+    <div class="priority-override" *ngIf="!editingTask">
+      <label class="override-toggle">
+        <input type="checkbox" formControlName="priorityOverrideEnabled" />
+        <span>Override suggested priority</span>
+      </label>
+
+      <div class="override-select" *ngIf="taskForm.get('priorityOverrideEnabled')?.value">
+        <p-dropdown
+          formControlName="manualPriority"
+          [options]="priorityOptions"
+          optionLabel="label"
+          optionValue="value">
+        </p-dropdown>
+      </div>
+    </div>
+
+    <div class="form-row" *ngIf="editingTask">
+      <label class="form-field">
+        <span class="field-label">Status</span>
+        <p-dropdown
+          styleClass="task-form-dropdown"
+          [appendTo]="'body'"
+          panelStyleClass="task-dropdown-panel"
+          formControlName="status"
+          [options]="statusOptions.slice(1)"
+          optionLabel="label"
+          optionValue="value">
+        </p-dropdown>
+      </label>
+
+      <label class="form-field">
+        <span class="field-label">Assignee</span>
+        <div class="input-with-icon">
+          <i class="pi pi-user"></i>
+          <p-dropdown
+            styleClass="task-form-dropdown has-leading-icon"
+            [appendTo]="'body'"
+            panelStyleClass="task-dropdown-panel"
+            formControlName="assigneeId"
+            [options]="projectMembers"
+            optionLabel="displayName"
+            optionValue="id"
+            [showClear]="true"
+            placeholder="Select a Project member"
+            emptyMessage="No project members available">
+          </p-dropdown>
+        </div>
+      </label>
+    </div>
+
+    <label class="form-field" *ngIf="!editingTask">
+      <span class="field-label">Assignee</span>
+      <div class="input-with-icon">
+        <i class="pi pi-user"></i>
+        <p-dropdown
+          styleClass="task-form-dropdown has-leading-icon"
+          [appendTo]="'body'"
+          panelStyleClass="task-dropdown-panel"
+          formControlName="assigneeId"
+          [options]="projectMembers"
+          optionLabel="displayName"
+          optionValue="id"
+          [showClear]="true"
+          placeholder="Select a project member"
+          emptyMessage="No project members available">
+        </p-dropdown>
+      </div>
+    </label>
+
+    <div class="dialog-actions">
+      <button pButton type="button" class="p-button-outlined btn-cancel" label="Cancel" (click)="closeTaskDialog()"></button>
+      <button pButton type="submit" class="btn-save" [loading]="savingTask" [label]="editingTask ? 'Save changes' : 'Create task'"></button>
+    </div>
+  </form>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="assignDialogVisible"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '26rem', maxWidth: '95vw' }"
+  header="Assign task">
+
+  <form class="task-form" [formGroup]="assignForm" (ngSubmit)="assignTask()">
+    <p class="assign-copy" *ngIf="selectedTaskForAssignment">
+      Assign <strong>{{ selectedTaskForAssignment.title }}</strong> to a project member.
+    </p>
+
+    <label>
+      <span>Project Member</span>
+        <p-dropdown
+          [appendTo]="'body'"
+          panelStyleClass="task-dropdown-panel"
+          formControlName="assigneeId"
+          [options]="projectMembers"
+          optionLabel="displayName"
+          optionValue="id"
+          placeholder="Select project member"
+          emptyMessage="No project members available">
+      </p-dropdown>
+      <small *ngIf="assignForm.get('assigneeId')?.invalid && assignForm.get('assigneeId')?.touched">Choose a project member.</small>
+    </label>
+
+    <div class="dialog-actions">
+      <button pButton type="button" class="p-button-text" label="Cancel" (click)="assignDialogVisible = false"></button>
+      <button pButton type="submit" [loading]="assigningTask" label="Save assignment"></button>
+    </div>
+  </form>
+</p-dialog>

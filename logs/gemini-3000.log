@@ -1,0 +1,10 @@
+
+> plansync-gemini-api@1.0.0 start
+> node src/server.js
+
+◇ injected env (4) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+Using Gemini model: gemini-2.5-flash-lite
+Gemini AI running on port 3000
+[2026-04-28T01:43:58.095Z] Gemini API server listening on port 3000
+[2026-04-28T01:46:38.971Z] Incoming request {"method":"POST","path":"/analyze-pdf"}
+[2026-04-28T01:46:42.962Z] Gemini PDF analysis generated {"fileName":"financial-report-projet-test.pdf","model":"gemini-2.5-flash-lite","preview":"The expenses are 7000.00 higher than the allocated budget, resulting in a 'NOT ACCEPTABLE' status. This indicates a seve"}

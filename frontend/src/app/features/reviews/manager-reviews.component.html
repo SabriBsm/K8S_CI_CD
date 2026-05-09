@@ -1,0 +1,157 @@
+﻿<section class="review-page">
+  <div class="review-hero">
+    <div>
+      <p class="eyebrow">AI task review</p>
+      <h1>Manager review queue</h1>
+      <p>Review submitted deliverables, compare the AI recommendation with the task context, and apply the final decision.</p>
+    </div>
+  </div>
+
+  <div class="review-loading" *ngIf="loading; else reviewContent">
+    <p-progressSpinner strokeWidth="4" animationDuration=".8s"></p-progressSpinner>
+    <span>Loading pending reviews...</span>
+  </div>
+
+  <ng-template #reviewContent>
+    <div class="review-empty" *ngIf="!reviews.length">
+      <i class="pi pi-check-circle"></i>
+      <strong>No pending reviews</strong>
+      <span>Uploaded deliverables will appear here once they are analyzed.</span>
+    </div>
+
+    <div class="review-list" *ngIf="reviews.length">
+      <article class="review-card" *ngFor="let review of reviews; trackBy: trackByReviewId">
+        <section class="review-section task-summary">
+          <div class="section-header">
+            <div>
+              <p class="section-label">Task details</p>
+              <h2>{{ review.task.title }}</h2>
+            </div>
+            <span class="status-pill" [ngClass]="getSuggestionClass(review.aiSuggestion)">
+              {{ getSuggestionLabel(review.aiSuggestion) }}
+            </span>
+          </div>
+
+          <div class="summary-grid">
+            <div>
+              <span class="meta-label">Team Member</span>
+              <strong>{{ review.task.assigneeName || 'Unassigned' }}</strong>
+            </div>
+            <div>
+              <span class="meta-label">Current status</span>
+              <strong>{{ review.task.status }}</strong>
+            </div>
+            <div>
+              <span class="meta-label">Deadline</span>
+              <strong>{{ review.task.deadline ? (review.task.deadline | date:'medium') : 'No deadline' }}</strong>
+            </div>
+            <div>
+              <span class="meta-label">Submitted at</span>
+              <strong>{{ review.createdAt | date:'medium' }}</strong>
+            </div>
+          </div>
+
+          <div class="description-block">
+            <span class="meta-label">Description</span>
+            <p>{{ review.task.description || 'No task description provided.' }}</p>
+          </div>
+        </section>
+
+        <section class="review-section ai-analysis">
+          <div class="section-header">
+            <div>
+              <p class="section-label">AI analysis</p>
+              <h3>Automated review output</h3>
+            </div>
+            <div class="score-badge">
+              <span>Score</span>
+              <strong>{{ review.aiScore }}%</strong>
+            </div>
+          </div>
+
+          <div class="analysis-copy">
+            <div class="analysis-item">
+              <span class="meta-label">Suggestion</span>
+              <strong [ngClass]="getSuggestionClass(review.aiSuggestion)">{{ review.aiSuggestion }}</strong>
+            </div>
+            <div class="analysis-item">
+              <span class="meta-label">Explanation</span>
+              <p>{{ review.aiExplanation }}</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="review-section rendu-preview">
+          <div class="section-header">
+            <div>
+              <p class="section-label">Submitted deliverable</p>
+              <h3>Inline preview</h3>
+            </div>
+          </div>
+
+          <div class="preview-frame" *ngIf="review.task.renduFileUrl; else missingRendu">
+            <iframe
+              *ngIf="isPdf(review.task) || isText(review.task)"
+              [src]="resolveRenduUrl(review.task) | safeUrl"
+              title="Task deliverable preview"
+              loading="lazy">
+            </iframe>
+
+            <img
+              *ngIf="isImage(review.task)"
+              [src]="resolveRenduUrl(review.task) || ''"
+              [alt]="review.task.title + ' deliverable preview'" />
+
+            <a
+              *ngIf="!isPdf(review.task) && !isImage(review.task) && !isText(review.task)"
+              class="preview-link"
+              [href]="resolveRenduUrl(review.task) || ''"
+              target="_blank"
+              rel="noopener">
+              Open submitted file
+            </a>
+          </div>
+
+          <ng-template #missingRendu>
+            <div class="preview-empty">
+              <i class="pi pi-file"></i>
+              <span>No deliverable uploaded for this task.</span>
+            </div>
+          </ng-template>
+        </section>
+
+        <section class="review-actions">
+          <button
+            pButton
+            type="button"
+            icon="pi pi-check"
+            label="Approve"
+            class="decision-approve"
+            [loading]="decidingReviewId === review.id"
+            (click)="decide(review, 'DONE')">
+          </button>
+
+          <button
+            pButton
+            type="button"
+            icon="pi pi-replay"
+            label="Send Back"
+            class="decision-send-back"
+            [loading]="decidingReviewId === review.id"
+            (click)="decide(review, 'IN_PROGRESS')">
+          </button>
+
+          <button
+            pButton
+            type="button"
+            icon="pi pi-times"
+            label="Reject"
+            class="decision-reject"
+            [loading]="decidingReviewId === review.id"
+            (click)="decide(review, 'TODO')">
+          </button>
+        </section>
+      </article>
+    </div>
+  </ng-template>
+</section>

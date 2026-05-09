@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: config-server
+  namespace: plansync
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: config-server
+  template:
+    metadata:
+      labels:
+        app: config-server
+    spec:
+      containers:
+        - name: config-server
+          image: sabriboussami/plansync-config-server:2026-05-09-corsfix
+          ports:
+            - containerPort: 8888
+          env:
+            - name: CONFIG_REPO_PATH
+              value: "/config-repo"
+          resources:
+            requests:
+              cpu: "150m"
+              memory: "256Mi"
+            limits:
+              cpu: "300m"
+              memory: "512Mi"
+          volumeMounts:
+            - name: config-repo-volume
+              mountPath: /config-repo
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8888
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8888
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            failureThreshold: 5
+      volumes:
+        - name: config-repo-volume
+          configMap:
+            name: plansync-config-repo

@@ -1,0 +1,309 @@
+{
+  "info": {
+    "name": "User Service API",
+    "description": "Collection d'API pour tester le User Service",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Créer un nouvel utilisateur",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"marie_dupont\",\n  \"password\": \"SecurePassword123\",\n  \"email\": \"marie@example.com\",\n  \"firstName\": \"Marie\",\n  \"lastName\": \"Dupont\",\n  \"avatarUrl\": \"https://example.com/avatars/marie.jpg\",\n  \"phoneNumber\": \"+33645678901\",\n  \"timezone\": \"Europe/Paris\",\n  \"language\": \"fr\",\n  \"role\": \"PROJECT_MANAGER\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/users",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "users"]
+        }
+      }
+    },
+    {
+      "name": "Récupérer un utilisateur par ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/api/users/1",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "users", "1"]
+        }
+      }
+    },
+    {
+      "name": "Récupérer un utilisateur par nom d'utilisateur",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/api/users/username/marie_dupont",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "users", "username", "marie_dupont"]
+        }
+      }
+    },
+    {
+      "name": "Récupérer un utilisateur par email",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/api/users/email/marie@example.com",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "users", "email", "marie@example.com"]
+        }
+      }
+    },
+    {
+      "name": "Récupérer tous les utilisateurs par rôle",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/api/users/role/PROJECT_MANAGER",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "users", "role", "PROJECT_MANAGER"]
+        }
+      }
+    },
+    {
+      "name": "Récupérer tous les utilisateurs actifs par rôle",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/api/users/role/PROJECT_MANAGER/active",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "users", "role", "PROJECT_MANAGER", "active"]
+        }
+      }
+    },
+    {
+      "name": "Récupérer tous les utilisateurs (avec pagination)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/api/users?page=0&size=10&sort=createdAt,desc",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "users"],
+          "query": [
+            {
+              "key": "page",
+              "value": "0"
+            },
+            {
+              "key": "size",
+              "value": "10"
+            },
+            {
+              "key": "sort",
+              "value": "createdAt,desc"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Récupérer tous les utilisateurs (sans pagination)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/api/users/all",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "users", "all"]
+        }
+      }
+    },
+    {
+      "name": "Mettre à jour un utilisateur",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"firstName\": \"Marie\",\n  \"lastName\": \"Dupont Modifié\",\n  \"phoneNumber\": \"+33712345678\",\n  \"role\": \"ADMIN\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/users/1",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "users", "1"]
+        }
+      }
+    },
+    {
+      "name": "Vérifier l'existence d'un nom d'utilisateur",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/api/users/check/username/marie_dupont",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "users", "check", "username", "marie_dupont"]
+        }
+      }
+    },
+    {
+      "name": "Vérifier l'existence d'un email",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/api/users/check/email/marie@example.com",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "users", "check", "email", "marie@example.com"]
+        }
+      }
+    },
+    {
+      "name": "Incrémenter les tentatives de connexion échouées",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/api/users/1/increment-failed-login",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "users", "1", "increment-failed-login"]
+        }
+      }
+    },
+    {
+      "name": "Réinitialiser les tentatives de connexion échouées",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/api/users/1/reset-failed-login",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "users", "1", "reset-failed-login"]
+        }
+      }
+    },
+    {
+      "name": "Changer le mot de passe",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"oldPassword\": \"SecurePassword123\",\n  \"newPassword\": \"NouveauPass123\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/users/1/change-password",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "users", "1", "change-password"]
+        }
+      }
+    },
+    {
+      "name": "Supprimer un utilisateur",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/api/users/1",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "users", "1"]
+        }
+      }
+    },
+    {
+      "name": "Mot de passe oublié",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"marie@example.com\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/users/forgot-password",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "users", "forgot-password"]
+        }
+      }
+    },
+    {
+      "name": "Réinitialiser mot de passe",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"token\": \"TOKEN_RECU_PAR_EMAIL\",\n  \"newPassword\": \"NouveauMotDePasse123\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/users/reset-password",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "users", "reset-password"]
+        }
+      }
+    }
+  ]
+}
+
+
+

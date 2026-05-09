@@ -1,0 +1,234 @@
+.risk-stats-page {
+  max-width: 1320px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.analysis-toolbar {
+  border: 1px solid #dbeafe;
+  border-radius: 14px;
+  padding: 0.75rem 0.85rem;
+  background: linear-gradient(160deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.window-switch {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+
+  > span {
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #1e3a8a;
+  }
+}
+
+.window-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.recommendation-board {
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 0.9rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
+
+  h3 {
+    margin: 0 0 0.65rem;
+    font-size: 1rem;
+    color: #1e293b;
+  }
+}
+
+.recommendation-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.recommendation-card {
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  padding: 0.75rem;
+  background: #ffffff;
+
+  h4 {
+    margin: 0 0 0.35rem;
+    font-size: 0.9rem;
+    color: #0f172a;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.8rem;
+    line-height: 1.45;
+    color: #475569;
+  }
+}
+
+.recommendation-card.critical {
+  border-color: #fca5a5;
+  background: linear-gradient(160deg, #fff7f7 0%, #fffafa 100%);
+}
+
+.recommendation-card.high {
+  border-color: #fdba74;
+  background: linear-gradient(160deg, #fff7ed 0%, #fffaf4 100%);
+}
+
+.recommendation-card.info {
+  border-color: #93c5fd;
+  background: linear-gradient(160deg, #eff6ff 0%, #f8fbff 100%);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.stat-tile {
+  border-radius: 14px;
+  padding: 0.95rem 1rem;
+  border: 1px solid #dbeafe;
+  background: linear-gradient(150deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 10px 24px -20px rgba(15, 23, 42, 0.85);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  span {
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 700;
+    color: #334155;
+  }
+
+  strong {
+    font-size: 1.55rem;
+    color: #0f172a;
+    line-height: 1.1;
+  }
+
+  .trend {
+    margin-top: 0.12rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 1.2;
+    cursor: help;
+    text-decoration: underline dotted;
+    text-underline-offset: 2px;
+  }
+
+  .trend.up {
+    color: #15803d;
+  }
+
+  .trend.down {
+    color: #b91c1c;
+  }
+
+  .trend.flat,
+  .trend.na {
+    color: #64748b;
+  }
+}
+
+.stat-tile.primary {
+  border-color: #93c5fd;
+  background: linear-gradient(150deg, #eff6ff 0%, #f8fbff 100%);
+}
+
+.stat-tile.success {
+  border-color: #86efac;
+  background: linear-gradient(150deg, #ecfdf5 0%, #f7fff9 100%);
+}
+
+.stat-tile.danger {
+  border-color: #fca5a5;
+  background: linear-gradient(150deg, #fef2f2 0%, #fff8f8 100%);
+}
+
+.stat-tile.accent {
+  border-color: #c4b5fd;
+  background: linear-gradient(150deg, #eef2ff 0%, #fafaff 100%);
+}
+
+.stat-tile.info {
+  border-color: #a5f3fc;
+  background: linear-gradient(150deg, #ecfeff 0%, #f4feff 100%);
+}
+
+.stat-tile.warn {
+  border-color: #fcd34d;
+  background: linear-gradient(150deg, #fffbeb 0%, #fffdf5 100%);
+}
+
+.stat-tile.money {
+  border-color: #86efac;
+  background: linear-gradient(150deg, #f0fdf4 0%, #f8fff9 100%);
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 0.8rem;
+}
+
+.chart-card {
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
+  padding: 0.9rem;
+
+  h3 {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0 0 0.55rem;
+    font-size: 1rem;
+    color: #1e293b;
+  }
+}
+
+.chart-help {
+  font-size: 0.78rem;
+  color: #64748b;
+  cursor: help;
+}
+
+.chart-card.wide {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 1024px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .recommendation-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .window-switch {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

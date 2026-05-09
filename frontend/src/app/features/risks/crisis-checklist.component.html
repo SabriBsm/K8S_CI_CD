@@ -1,0 +1,44 @@
+<section class="checklist-page">
+  <header class="checklist-header">
+    <h2>Crisis Response Checklist</h2>
+    <p>Track critical mitigation actions and confirm execution in real time.</p>
+  </header>
+
+  <div class="checklist-context">
+    <article class="context-item">
+      <span>Risk</span>
+      <strong>{{ riskTitle || '-' }}</strong>
+    </article>
+    <article class="context-item">
+      <span>Action</span>
+      <strong>{{ mitigationAction || '-' }}</strong>
+    </article>
+    <article class="context-item">
+      <span>Status</span>
+      <strong>{{ mitigationStatus || '-' }}</strong>
+    </article>
+    <article class="context-item">
+      <span>Priority</span>
+      <strong>{{ priority || '-' }}</strong>
+    </article>
+    <article class="context-item">
+      <span>Due date</span>
+      <strong>{{ dueDate || '-' }}</strong>
+    </article>
+  </div>
+
+  <div class="progress-card">
+    <span>Progress</span>
+    <strong>{{ completedSteps }} / {{ steps.length }} ({{ completionRatio }}%)</strong>
+    <div class="progress-track">
+      <div class="progress-bar" [style.width.%]="completionRatio"></div>
+    </div>
+  </div>
+
+  <div class="steps-list">
+    <label class="step-item" *ngFor="let step of steps">
+      <input type="checkbox" [(ngModel)]="step.done" />
+      <span>{{ step.label }}</span>
+    </label>
+  </div>
+</section>

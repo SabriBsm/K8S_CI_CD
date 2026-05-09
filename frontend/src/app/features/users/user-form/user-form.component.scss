@@ -1,0 +1,7 @@
+.field-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.req { color: var(--color-danger); margin-left: 2px; }

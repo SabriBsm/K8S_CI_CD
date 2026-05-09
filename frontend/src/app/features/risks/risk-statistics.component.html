@@ -1,0 +1,187 @@
+<div class="risk-stats-page">
+  <div class="ps-page-header">
+    <div class="header-title">
+      <h2>Risk Statistics</h2>
+      <p>Modern analytics built from real backend data.</p>
+    </div>
+    <div class="header-actions">
+      <button pButton pRipple icon="pi pi-refresh" label="Refresh" class="p-button-sm p-button-secondary" [loading]="loading" (click)="refresh()"></button>
+      <button pButton pRipple icon="pi pi-arrow-left" label="Back to Risks" class="p-button-sm" (click)="backToRisks()"></button>
+    </div>
+  </div>
+
+  <section class="analysis-toolbar">
+    <div class="window-switch">
+      <span>Analysis Window</span>
+      <div class="window-actions">
+        <button
+          *ngFor="let window of analysisWindows"
+          pButton
+          pRipple
+          type="button"
+          class="p-button-sm"
+          [outlined]="selectedAnalysisWindow !== window.value"
+          [severity]="selectedAnalysisWindow === window.value ? 'primary' : 'secondary'"
+          (click)="onWindowChange(window.value)">
+          {{ window.label }}
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section class="stats-grid">
+    <article class="stat-tile primary">
+      <span>Total Risks</span>
+      <strong>{{ totalRisks }}</strong>
+    </article>
+    <article class="stat-tile success">
+      <span>Total Mitigations</span>
+      <strong>{{ totalMitigations }}</strong>
+    </article>
+    <article class="stat-tile danger">
+      <span>Overdue Mitigations</span>
+      <strong>{{ overdueMitigations }}</strong>
+    </article>
+    <article class="stat-tile accent">
+      <span>Average Cost</span>
+      <strong>{{ averageCost | number:'1.0-2' }}</strong>
+    </article>
+    <article class="stat-tile success">
+      <span>Effective Mitigations</span>
+      <strong>{{ effectiveMitigations }}</strong>
+    </article>
+    <article class="stat-tile danger">
+      <span>Ineffective Mitigations</span>
+      <strong>{{ ineffectiveMitigations }}</strong>
+    </article>
+    <article class="stat-tile primary">
+      <span>Average Effectiveness</span>
+      <strong>{{ averageMitigationEffectiveness | number:'1.0-2' }}%</strong>
+    </article>
+    <article class="stat-tile accent">
+      <span>Effectiveness Rate</span>
+      <strong>{{ mitigationEffectivenessRate | number:'1.0-2' }}%</strong>
+    </article>
+    <article class="stat-tile info">
+      <span>Average Risk Score</span>
+      <strong>{{ averageRiskScore | number:'1.0-2' }}</strong>
+    </article>
+    <article class="stat-tile danger">
+      <span>Critical Exposure</span>
+      <strong>{{ criticalExposureCount }}</strong>
+    </article>
+    <article class="stat-tile primary">
+      <span>Mitigation Coverage</span>
+      <strong>{{ mitigationCoverageRate | number:'1.0-2' }}%</strong>
+      <small class="trend" [ngClass]="coverageTrend.state" [pTooltip]="getTrendTooltip('coverage')" tooltipPosition="top">{{ coverageTrend.text }} {{ trendWindowLabel }}</small>
+    </article>
+    <article class="stat-tile warn">
+      <span>Mitigation Backlog</span>
+      <strong>{{ mitigationBacklogRate | number:'1.0-2' }}%</strong>
+      <small class="trend" [ngClass]="backlogTrend.state" [pTooltip]="getTrendTooltip('backlog')" tooltipPosition="top">{{ backlogTrend.text }} {{ trendWindowLabel }}</small>
+    </article>
+    <article class="stat-tile danger">
+      <span>Urgency Index</span>
+      <strong>{{ urgencyIndex | number:'1.0-2' }}</strong>
+      <small class="trend" [ngClass]="urgencyTrend.state" [pTooltip]="getTrendTooltip('urgency')" tooltipPosition="top">{{ urgencyTrend.text }} {{ trendWindowLabel }}</small>
+    </article>
+    <article class="stat-tile money">
+      <span>Cost at Risk</span>
+      <strong>{{ costAtRisk | number:'1.0-2' }}</strong>
+      <small class="trend" [ngClass]="costAtRiskTrend.state" [pTooltip]="getTrendTooltip('costAtRisk')" tooltipPosition="top">{{ costAtRiskTrend.text }} {{ trendWindowLabel }}</small>
+    </article>
+    <article class="stat-tile info">
+      <span>Portfolio Health Score</span>
+      <strong>{{ portfolioHealthScore | number:'1.0-2' }}</strong>
+      <small class="trend" [ngClass]="healthTrend.state" [pTooltip]="getTrendTooltip('health')" tooltipPosition="top">{{ healthTrend.text }} {{ trendWindowLabel }}</small>
+    </article>
+    <article class="stat-tile warn">
+      <span>Upcoming Due Items</span>
+      <strong>{{ upcomingDueCount }}</strong>
+    </article>
+  </section>
+
+  <section class="recommendation-board">
+    <h3>Smart Recommendations</h3>
+    <div class="recommendation-grid">
+      <article class="recommendation-card" *ngFor="let rec of recommendations" [ngClass]="rec.level">
+        <h4>{{ rec.title }}</h4>
+        <p>{{ rec.detail }}</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="charts-grid">
+    <article class="chart-card donut">
+      <h3>
+        Risks by Status
+        <i
+          class="pi pi-info-circle chart-help"
+          pTooltip="Shows how risks are distributed by lifecycle status. Use it to detect concentration in OPEN or IN_PROGRESS states."
+          tooltipPosition="top">
+        </i>
+      </h3>
+      <p-chart type="doughnut" [data]="riskStatusChartData" [options]="riskStatusChartOptions" [style]="{ height: '320px' }"></p-chart>
+    </article>
+
+    <article class="chart-card">
+      <h3>
+        Risks by Impact
+        <i
+          class="pi pi-info-circle chart-help"
+          pTooltip="Compares risk volume by impact level to identify where business consequences are strongest."
+          tooltipPosition="top">
+        </i>
+      </h3>
+      <p-chart type="bar" [data]="impactChartData" [options]="impactChartOptions" [style]="{ height: '320px' }"></p-chart>
+    </article>
+
+    <article class="chart-card wide">
+      <h3>
+        Risks by Probability
+        <i
+          class="pi pi-info-circle chart-help"
+          pTooltip="Tracks how many risks are likely to occur (LOW / MEDIUM / HIGH). Combine with impact for prioritization."
+          tooltipPosition="top">
+        </i>
+      </h3>
+      <p-chart type="line" [data]="probabilityChartData" [options]="probabilityChartOptions" [style]="{ height: '320px' }"></p-chart>
+    </article>
+
+    <article class="chart-card">
+      <h3>
+        Mitigation Effectiveness
+        <i
+          class="pi pi-info-circle chart-help"
+          pTooltip="Shows effective vs ineffective mitigations based on evaluated outcomes."
+          tooltipPosition="top">
+        </i>
+      </h3>
+      <p-chart type="doughnut" [data]="mitigationEffectivenessChartData" [options]="mitigationEffectivenessChartOptions" [style]="{ height: '320px' }"></p-chart>
+    </article>
+
+    <article class="chart-card wide">
+      <h3>
+        Risk Score Distribution
+        <i
+          class="pi pi-info-circle chart-help"
+          pTooltip="Buckets risks into score bands (Low/Medium/High/Critical) based on probability x impact weighting."
+          tooltipPosition="top">
+        </i>
+      </h3>
+      <p-chart type="bar" [data]="riskScoreBandChartData" [options]="riskScoreBandChartOptions" [style]="{ height: '320px' }"></p-chart>
+    </article>
+
+    <article class="chart-card donut">
+      <h3>
+        Mitigation Pipeline
+        <i
+          class="pi pi-info-circle chart-help"
+          pTooltip="Displays mitigation workload across pipeline stages: planned, in progress, completed, cancelled."
+          tooltipPosition="top">
+        </i>
+      </h3>
+      <p-chart type="doughnut" [data]="mitigationPipelineChartData" [options]="mitigationPipelineChartOptions" [style]="{ height: '320px' }"></p-chart>
+    </article>
+  </section>
+</div>

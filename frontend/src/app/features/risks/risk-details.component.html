@@ -1,0 +1,232 @@
+<div class="risks-page" *ngIf="risk; else loadingTpl">
+
+  <div class="ps-page-header">
+    <div class="header-title">
+      <h2>Risk Details</h2>
+      <p>Read-only view of the selected project risk.</p>
+    </div>
+    <div class="header-actions">
+      <button pButton pRipple icon="pi pi-arrow-left" label="Back" class="p-button-sm p-button-text" (click)="backToList()"></button>
+    </div>
+  </div>
+
+
+  <div class="ps-page-card detail-shell">
+    <div class="detail-top">
+      <div class="title-block">
+        <span class="eyebrow">Risk</span>
+        <h3>{{ risk.title }}</h3>
+      </div>
+
+      <div class="pill-row">
+        <span class="pill pill-probability">{{ risk.probability }}</span>
+        <span class="pill pill-impact">{{ risk.impact }}</span>
+        <span class="pill pill-status">{{ risk.status }}</span>
+      </div>
+    </div>
+
+    <div class="detail-grid">
+      <section class="detail-section">
+        <h4>Description</h4>
+        <p>{{ risk.description || '-' }}</p>
+      </section>
+
+      <section class="detail-section" *ngIf="!isCustomerOrClient">
+        <h4>Summary</h4>
+        <ul class="summary-list">
+          <li><span>Category</span><strong>{{ risk.category }}</strong></li>
+          <li><span>Status</span><strong>{{ risk.status }}</strong></li>
+          <li><span>Probability</span><strong>{{ risk.probability }}</strong></li>
+          <li><span>Impact</span><strong>{{ risk.impact }}</strong></li>
+          <li><span>Mitigation plans</span><strong>{{ risk.mitigationPlans?.length ?? 0 }}</strong></li>
+         <li><span>Detected by</span><strong>{{ risk.createdByName || '-' }}</strong></li>
+        </ul>
+      </section>
+
+      <section class="detail-section monitoring-section">
+        <h4>Risk Monitoring</h4>
+        <div class="monitor-state" [ngClass]="isCriticalRisk(risk) ? 'critical' : 'normal'">
+          <i class="pi" [ngClass]="isCriticalRisk(risk) ? 'pi-exclamation-triangle' : 'pi-check-circle'"></i>
+          <div>
+            <strong>{{ isCriticalRisk(risk) ? 'Critical risk detected' : 'Risk is not critical' }}</strong>
+            <p *ngIf="isCriticalRisk(risk)">Condition: probability = HIGH and impact = MODERATE.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="detail-section history-section">
+        <h4>Change History</h4>
+
+        <div class="history-loading" *ngIf="historyLoading">
+          <i class="pi pi-spin pi-spinner"></i>
+          <span>Loading history...</span>
+        </div>
+
+        <div class="history-list" *ngIf="!historyLoading && riskHistory.length; else noHistoryTpl">
+          <article class="history-item" *ngFor="let h of riskHistory">
+            <div class="history-rail" aria-hidden="true">
+              <span class="history-dot"></span>
+            </div>
+
+            <div class="history-card">
+              <div class="history-meta">
+                <strong>{{ formatHistoryNote(h.note) }}</strong>
+                <small>
+                  <i class="pi pi-clock"></i>
+                  {{ h.changedAt ? (h.changedAt | date:'MMM d, y, HH:mm') : '-' }}
+                  <span class="history-sep">•</span>
+                  <i class="pi pi-user"></i>
+                  {{ h.changedBy || 'system' }}
+                </small>
+              </div>
+
+              <div class="history-deltas">
+                <div class="delta-row">
+                  <span class="delta-label">Status</span>
+                  <span class="delta-old">{{ h.previousStatus || '-' }}</span>
+                  <i class="pi pi-arrow-right"></i>
+                  <span class="delta-new">{{ h.newStatus || '-' }}</span>
+                </div>
+
+                <div class="delta-row">
+                  <span class="delta-label">Probability</span>
+                  <span class="delta-old">{{ h.previousProbability || '-' }}</span>
+                  <i class="pi pi-arrow-right"></i>
+                  <span class="delta-new">{{ h.newProbability || '-' }}</span>
+                </div>
+
+                <div class="delta-row">
+                  <span class="delta-label">Impact</span>
+                  <span class="delta-old">{{ h.previousImpact || '-' }}</span>
+                  <i class="pi pi-arrow-right"></i>
+                  <span class="delta-new">{{ h.newImpact || '-' }}</span>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <ng-template #noHistoryTpl>
+          <p class="history-empty">No history available for this risk.</p>
+        </ng-template>
+      </section>
+
+      <section class="detail-section mitigation-effectiveness-section" *ngIf="!isCustomerOrClient">
+        <div class="mitigation-heading">
+          <div>
+            <span class="mitigation-eyebrow">Mitigation Lab</span>
+            <h4>Mitigation Effectiveness Tracking</h4>
+          </div>
+          <span class="mitigation-chip">
+            <i class="pi pi-shield"></i>
+            {{ risk.mitigationPlans?.length ?? 0 }} plan(s)
+          </span>
+        </div>
+
+        <div class="history-empty" *ngIf="!(risk.mitigationPlans?.length ?? 0)">
+          No mitigation plan available for this risk.
+        </div>
+
+        <div class="effectiveness-shell" *ngIf="(risk.mitigationPlans?.length ?? 0) > 0" [formGroup]="effectivenessForm">
+          <div class="mitigation-spotlight" *ngIf="selectedMitigation as sm">
+            <div class="spotlight-main">
+              <p class="spotlight-label">Selected plan</p>
+              <h5>{{ sm.action }}</h5>
+              <div class="spotlight-meta">
+                <span>
+                  <i class="pi pi-calendar"></i>
+                  {{ sm.dueDate ? (sm.dueDate | date:'MMM d, y') : 'No due date' }}
+                </span>
+                <span>
+                  <i class="pi pi-wallet"></i>
+                  {{ sm.cost !== null && sm.cost !== undefined ? (sm.cost | currency) : 'No cost' }}
+                </span>
+                <span>
+                  <i class="pi pi-flag"></i>
+                  {{ sm.status || '-' }}
+                </span>
+              </div>
+            </div>
+            <div class="spotlight-badge" [ngClass]="mitigationStatusLabel === 'Effective' ? 'is-good' : 'is-risky'">
+              <span>Current verdict</span>
+              <strong>{{ mitigationStatusLabel }}</strong>
+            </div>
+          </div>
+
+          <div class="field-row-3">
+            <div>
+              <label>Mitigation Plan</label>
+              <p-dropdown
+                [(ngModel)]="selectedMitigationId"
+                [ngModelOptions]="{ standalone: true }"
+                [options]="risk.mitigationPlans"
+                optionLabel="action"
+                optionValue="id"
+                placeholder="Select mitigation"
+                styleClass="w-full"
+                appendTo="body">
+              </p-dropdown>
+            </div>
+
+            <div>
+              <label>Final Probability</label>
+              <p-dropdown
+                formControlName="finalProbability"
+                [options]="probabilityOptions"
+                optionLabel="label"
+                optionValue="value"
+                styleClass="w-full"
+                appendTo="body">
+              </p-dropdown>
+            </div>
+
+            <div>
+              <label>Final Impact</label>
+              <p-dropdown
+                formControlName="finalImpact"
+                [options]="impactOptions"
+                optionLabel="label"
+                optionValue="value"
+                styleClass="w-full"
+                appendTo="body">
+              </p-dropdown>
+            </div>
+          </div>
+
+          <div class="effectiveness-note">
+            <label>Evaluation Note (optional)</label>
+            <input pInputText formControlName="note" class="w-full" placeholder="Describe what changed after mitigation" />
+          </div>
+
+          <div class="effectiveness-metrics" *ngIf="selectedMitigation as sm">
+            <div class="metric"><span>Initial Score</span><strong>{{ selectedMitigationInitialScore ?? '-' }}</strong></div>
+            <div class="metric"><span>Final Score</span><strong>{{ selectedMitigationFinalScore ?? '-' }}</strong></div>
+            <div class="metric"><span>Effectiveness</span><strong>{{ mitigationEffectivenessLabel }}</strong></div>
+            <div class="metric"><span>Status</span><strong>{{ mitigationStatusLabel }}</strong></div>
+          </div>
+
+          <div class="effectiveness-actions">
+            <button
+              pButton
+              pRipple
+              icon="pi pi-calculator"
+              label="Evaluate Mitigation"
+              class="p-button-sm"
+              [loading]="evaluatingMitigation"
+              [disabled]="!selectedMitigationId"
+              (click)="evaluateSelectedMitigation()"
+              *ngIf="!isCustomerOrClient">
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<ng-template #loadingTpl>
+  <div class="ps-page-card loading-card">
+    <i class="pi pi-spin pi-spinner"></i>
+    <span>Loading risk details...</span>
+  </div>
+</ng-template>

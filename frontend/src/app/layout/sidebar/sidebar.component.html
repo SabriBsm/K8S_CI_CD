@@ -1,0 +1,63 @@
+<nav class="sidebar" [class.collapsed]="collapsed">
+  <div class="sidebar-logo">
+    <div class="logo-icon">
+      <i class="pi pi-sync"></i>
+    </div>
+    <div class="logo-copy" *ngIf="!collapsed">
+      <span class="logo-text">{{ companyName }}</span>
+      <small>{{ companyTagline }}</small>
+    </div>
+  </div>
+
+
+
+  <div class="sidebar-nav">
+    <ng-container *ngFor="let group of navGroups">
+      <div class="nav-group-title" *ngIf="group.title && !collapsed && hasVisibleItems(group)">{{ group.title }}</div>
+      <ng-container *ngFor="let item of group.items">
+        <a
+          *ngIf="canDisplayItem(item)"
+          [routerLink]="item.route"
+          class="nav-item"
+          [class.active]="isActive(item.route)"
+          [pTooltip]="collapsed ? item.label : ''"
+          tooltipPosition="right">
+          <i [class]="item.icon" class="nav-icon"></i>
+          <span class="nav-label" *ngIf="!collapsed">{{ item.label }}</span>
+          <span *ngIf="item.badge && !collapsed" class="nav-badge">{{ item.badge }}</span>
+        </a>
+      </ng-container>
+    </ng-container>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-divider"></div>
+
+    <div class="contact-section" *ngIf="!collapsed">
+      <h5>Contact</h5>
+      <a class="contact-row" [href]="'mailto:' + companyEmail">
+        <i class="pi pi-envelope"></i>
+        <span>{{ companyEmail }}</span>
+      </a>
+      <a class="contact-row" [href]="getPhoneHref()">
+        <i class="pi pi-phone"></i>
+        <span>{{ companyPhone }}</span>
+      </a>
+
+
+      <div class="social-row">
+        <a
+          *ngFor="let link of socialLinks"
+          [href]="link.url"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="social-link"
+          [attr.aria-label]="link.label"
+          [pTooltip]="link.label"
+          tooltipPosition="top">
+          <i [class]="link.icon"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+</nav>

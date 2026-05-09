@@ -1,0 +1,309 @@
+<div class="quality-page">
+  <div class="section-header">
+    <div>
+      <h3>Quality Standards</h3>
+      <p>Review active standards and inspect the criteria used to score audits and evidence.</p>
+    </div>
+
+    <div class="header-actions">
+      <div class="header-filter">
+        <label for="standardFilter">Criteria scope</label>
+        <p-dropdown
+          inputId="standardFilter"
+          [options]="standards"
+          [(ngModel)]="selectedStandardId"
+          optionLabel="name"
+          optionValue="id"
+          placeholder="All standards"
+          [disabled]="loading || !standards.length"
+          (onChange)="onStandardChange()">
+        </p-dropdown>
+      </div>
+
+      <button
+        pButton
+        pRipple
+        icon="pi pi-list-check"
+        label="Add Criterion"
+        class="p-button-sm p-button-outlined"
+        [disabled]="loading || !selectedStandardId || submittingCriterion"
+        (click)="openCreateCriterionDialog()">
+      </button>
+
+      <button
+        pButton
+        pRipple
+        icon="pi pi-clipboard"
+        label="Create Audit"
+        class="p-button-sm p-button-outlined"
+        [disabled]="loading || !selectedStandardId || submittingAudit"
+        (click)="openCreateAuditDialog()">
+      </button>
+
+      <button
+        pButton
+        pRipple
+        icon="pi pi-plus"
+        label="Create Standard"
+        class="p-button-sm"
+        [disabled]="projectsLoading || submitting"
+        (click)="openCreateDialog()">
+      </button>
+    </div>
+  </div>
+
+  <div class="quality-layout">
+    <div class="ps-page-card">
+      <div class="card-header-bar">
+        <h4>Standards Register</h4>
+        <span class="meta-count">{{ standards.length }} total</span>
+      </div>
+
+      <p-table [value]="standards" [loading]="loading" [rowHover]="true" responsiveLayout="scroll" styleClass="p-datatable-sm">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Code</th>
+            <th>Standard</th>
+            <th>Category</th>
+            <th>Project</th>
+            <th>Status</th>
+            <th>Version</th>
+            <th style="width: 8rem; text-align: center;">Actions</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-standard>
+          <tr>
+            <td class="emphasis">{{ standard.code }}</td>
+            <td>
+              <div class="item-title">{{ standard.name }}</div>
+              <div class="item-meta">{{ standard.description || 'No description provided' }}</div>
+            </td>
+            <td>{{ standard.category.split('_').join(' ') }}</td>
+            <td>{{ standard.project?.name || 'No project' }}</td>
+            <td>
+              <span class="badge" [ngClass]="standard.active ? 'badge-active' : 'badge-inactive'">
+                {{ standard.active ? 'Active' : 'Inactive' }}
+              </span>
+            </td>
+            <td>{{ standard.version }}</td>
+            <td>
+              <div class="action-btns">
+                <button
+                  pButton
+                  pRipple
+                  icon="pi pi-pencil"
+                  class="p-button-text p-button-sm p-button-secondary"
+                  pTooltip="Edit"
+                  tooltipPosition="top"
+                  [disabled]="submitting"
+                  (click)="editStandard(standard)">
+                </button>
+                <button
+                  pButton
+                  pRipple
+                  icon="pi pi-trash"
+                  class="p-button-text p-button-sm p-button-danger"
+                  pTooltip="Delete"
+                  tooltipPosition="top"
+                  [disabled]="submitting"
+                  (click)="deleteStandard(standard)">
+                </button>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+    <div class="ps-page-card">
+      <div class="card-header-bar">
+        <h4>Checklist Criteria</h4>
+        <span class="meta-count">{{ criteria.length }} criteria</span>
+      </div>
+
+      <p-table [value]="criteria" [loading]="loading" [rowHover]="true" responsiveLayout="scroll" styleClass="p-datatable-sm">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Order</th>
+            <th>Criterion</th>
+            <th>Weight</th>
+            <th>Mandatory</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-criterion>
+          <tr>
+            <td>{{ criterion.orderIndex }}</td>
+            <td>
+              <div class="item-title">{{ criterion.title }}</div>
+              <div class="item-meta">{{ criterion.expectedValue || criterion.description || 'No expected value provided' }}</div>
+            </td>
+            <td>{{ criterion.weight }}%</td>
+            <td>
+              <span class="badge" [ngClass]="criterion.mandatory ? 'badge-pending' : 'badge-active'">
+                {{ criterion.mandatory ? 'Required' : 'Optional' }}
+              </span>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+
+  <div class="ps-page-card">
+    <div class="card-header-bar">
+      <h4>Audits For Selected Standard</h4>
+      <span class="meta-count">{{ audits.length }} audits</span>
+    </div>
+
+    <p-table [value]="audits" [loading]="loadingAudits" [rowHover]="true" responsiveLayout="scroll" styleClass="p-datatable-sm">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Audit</th>
+          <th>Status</th>
+          <th>Type</th>
+          <th>Planned Date</th>
+          <th>Score</th>
+          <th>Compliance</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-audit>
+        <tr>
+          <td>
+            <div class="item-title">{{ audit.title }}</div>
+            <div class="item-meta">{{ audit.description || 'No description provided' }}</div>
+          </td>
+          <td>
+            <span class="badge" [ngClass]="getAuditStatusClass(audit.status)">
+              {{ audit.status.split('_').join(' ') }}
+            </span>
+          </td>
+          <td>{{ audit.auditType }}</td>
+          <td>{{ audit.plannedDate ? (audit.plannedDate | date:'MMM d, y') : 'Not scheduled' }}</td>
+          <td>{{ audit.score || 0 }}%</td>
+          <td>{{ audit.complianceRate || 0 }}%</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<app-quality-standard-form
+  [visible]="showStandardDialog"
+  [standard]="selectedStandard"
+  [projects]="projects"
+  (visibleChange)="showStandardDialog = $event"
+  (saved)="onStandardSaved($event)">
+</app-quality-standard-form>
+
+<p-dialog
+  header="Add Criterion"
+  [(visible)]="showCriterionDialog"
+  [modal]="true"
+  [style]="{ width: '520px' }"
+  [draggable]="false"
+  [resizable]="false">
+
+  <form [formGroup]="criterionForm" class="dialog-form">
+    <div class="form-field">
+      <label>Title <span class="req">*</span></label>
+      <input pInputText formControlName="title" class="w-full" />
+      <small *ngIf="isCriterionFieldInvalid('title')" class="field-error">Title is required</small>
+    </div>
+
+    <div class="form-field">
+      <label>Description</label>
+      <textarea pInputTextarea formControlName="description" rows="3" class="w-full"></textarea>
+    </div>
+
+    <div class="form-field">
+      <label>Expected Value</label>
+      <input pInputText formControlName="expectedValue" class="w-full" />
+    </div>
+
+    <div class="field-row-3">
+      <div class="form-field">
+        <label>Weight <span class="req">*</span></label>
+        <input pInputText type="number" min="0.1" step="0.1" formControlName="weight" class="w-full" />
+        <small *ngIf="isCriterionFieldInvalid('weight')" class="field-error">Weight is required</small>
+      </div>
+
+      <div class="form-field">
+        <label>Order <span class="req">*</span></label>
+        <input pInputText type="number" min="1" step="1" formControlName="orderIndex" class="w-full" />
+        <small *ngIf="isCriterionFieldInvalid('orderIndex')" class="field-error">Order is required</small>
+      </div>
+
+      <div class="form-field">
+        <label>Mandatory <span class="req">*</span></label>
+        <p-dropdown
+          formControlName="mandatory"
+          [options]="[{label: 'Yes', value: true}, {label: 'No', value: false}]"
+          optionLabel="label"
+          optionValue="value"
+          styleClass="w-full">
+        </p-dropdown>
+      </div>
+    </div>
+  </form>
+
+  <ng-template pTemplate="footer">
+    <button pButton pRipple label="Cancel" class="p-button-text p-button-sm" [disabled]="submittingCriterion" (click)="showCriterionDialog = false"></button>
+    <button pButton pRipple label="Create Criterion" class="p-button-sm" [loading]="submittingCriterion" [disabled]="submittingCriterion" (click)="createCriterion()"></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  header="Create Audit For Standard"
+  [(visible)]="showAuditDialog"
+  [modal]="true"
+  [style]="{ width: '520px' }"
+  [draggable]="false"
+  [resizable]="false">
+
+  <form [formGroup]="auditForm" class="dialog-form">
+    <div class="form-field">
+      <label>Title <span class="req">*</span></label>
+      <input pInputText formControlName="title" class="w-full" />
+      <small *ngIf="isAuditFieldInvalid('title')" class="field-error">Title is required</small>
+    </div>
+
+    <div class="form-field">
+      <label>Description</label>
+      <textarea pInputTextarea formControlName="description" rows="3" class="w-full"></textarea>
+    </div>
+
+    <div class="field-row-3">
+      <div class="form-field">
+        <label>Type <span class="req">*</span></label>
+        <p-dropdown
+          formControlName="auditType"
+          [options]="auditTypeOptions"
+          optionLabel="label"
+          optionValue="value"
+          styleClass="w-full">
+        </p-dropdown>
+      </div>
+
+      <div class="form-field">
+        <label>Status <span class="req">*</span></label>
+        <p-dropdown
+          formControlName="status"
+          [options]="[{label: 'Planned', value: 'PLANNED'}, {label: 'Draft', value: 'DRAFT'}]"
+          optionLabel="label"
+          optionValue="value"
+          styleClass="w-full">
+        </p-dropdown>
+      </div>
+
+      <div class="form-field">
+        <label>Planned Date</label>
+        <input pInputText type="date" formControlName="plannedDate" class="w-full" />
+      </div>
+    </div>
+  </form>
+
+  <ng-template pTemplate="footer">
+    <button pButton pRipple label="Cancel" class="p-button-text p-button-sm" [disabled]="submittingAudit" (click)="showAuditDialog = false"></button>
+    <button pButton pRipple label="Create Audit" class="p-button-sm" [loading]="submittingAudit" [disabled]="submittingAudit" (click)="createAudit()"></button>
+  </ng-template>
+</p-dialog>

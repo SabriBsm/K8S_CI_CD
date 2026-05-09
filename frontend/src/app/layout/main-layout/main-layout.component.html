@@ -1,0 +1,9 @@
+<div class="ps-layout">
+  <app-sidebar [collapsed]="sidebarCollapsed"></app-sidebar>
+  <div class="ps-main">
+    <app-topbar (toggleSidebar)="toggleSidebar()"></app-topbar>
+    <main class="ps-content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

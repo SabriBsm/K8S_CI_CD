@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(ng version:*)",
+      "Read(//home/farouk-azizi/esprit_education/4_arctic/PI/PlanSync_Pro_monolothique/**)",
+      "Bash(npm install:*)",
+      "Bash(ng generate:*)"
+    ]
+  }
+}

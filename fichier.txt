@@ -1,0 +1,9 @@
+=== Frontend Versions ===
+Angular: 18.2.0
+Node: 22.17.0
+NPM: 10.9.2
+
+=== Backend Versions ===
+version spring boot 3.3.5
+jdk :  jbr 17.0.12
+java 17

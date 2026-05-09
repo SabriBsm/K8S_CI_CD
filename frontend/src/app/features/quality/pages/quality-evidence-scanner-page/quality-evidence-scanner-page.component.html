@@ -1,0 +1,182 @@
+<div class="quality-evidence-scanner-page">
+  <div class="section-header">
+    <div>
+      <h3>AI Evidence Scanner</h3>
+      <p>Upload an audit evidence PDF/image or paste text for AI-assisted non-conformity detection.</p>
+    </div>
+  </div>
+
+  <div class="scanner-layout">
+    <div class="ps-page-card scanner-panel">
+      <div class="card-header-bar">
+        <h4>Evidence Input</h4>
+      </div>
+
+      <div class="scanner-form" *ngIf="!loadingContext; else contextLoading">
+        <div class="form-row">
+          <label>Audit context</label>
+          <p-dropdown
+            [options]="audits"
+            [(ngModel)]="selectedAuditId"
+            optionLabel="title"
+            optionValue="id"
+            placeholder="Select audit"
+            styleClass="w-full"
+            [showClear]="true"
+            (onChange)="onAuditChange()">
+          </p-dropdown>
+        </div>
+
+        <div class="form-row">
+          <label>Checklist item</label>
+          <p-dropdown
+            [options]="checklistItems"
+            [(ngModel)]="selectedChecklistItemId"
+            optionLabel="label"
+            optionValue="id"
+            placeholder="Optional checklist item"
+            styleClass="w-full"
+            [disabled]="!selectedAuditId"
+            [showClear]="true">
+          </p-dropdown>
+        </div>
+
+        <div class="form-row">
+          <label for="evidence-file">Evidence file</label>
+          <input
+            id="evidence-file"
+            type="file"
+            accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg"
+            (change)="onFileSelected($event)" />
+          <small>PDF text is extracted automatically. For images, paste the visible text below.</small>
+        </div>
+
+        <div class="form-row">
+          <label for="manual-text">Manual text fallback</label>
+          <textarea
+            id="manual-text"
+            pInputTextarea
+            [(ngModel)]="manualText"
+            rows="8"
+            [autoResize]="true"
+            placeholder="Paste visible text, observations, report excerpts, or image content here.">
+          </textarea>
+        </div>
+
+        <div class="scanner-actions">
+          <button
+            pButton
+            pRipple
+            type="button"
+            label="Scan Evidence with AI"
+            icon="pi pi-sparkles"
+            [loading]="scanning"
+            [disabled]="scanning"
+            (click)="scanEvidence()">
+          </button>
+        </div>
+      </div>
+
+      <ng-template #contextLoading>
+        <p-skeleton height="18rem"></p-skeleton>
+      </ng-template>
+    </div>
+
+    <div class="ps-page-card result-panel">
+      <div class="card-header-bar">
+        <h4>AI Result</h4>
+      </div>
+
+      <div class="empty-state-row" *ngIf="!scanning && !scanResult">
+        <i class="pi pi-file-check"></i>
+        <span>No evidence scan yet</span>
+      </div>
+
+      <p-skeleton *ngIf="scanning" height="20rem"></p-skeleton>
+
+      <div class="scan-result" *ngIf="!scanning && scanResult">
+        <div class="result-title-row">
+          <div>
+            <div class="item-title">{{ scanResult.suggestedTitle }}</div>
+            <div class="item-meta">{{ scanResult.suggestedCategory || 'Uncategorized' }} - {{ scanResult.sourceType }}</div>
+          </div>
+          <div class="confidence-box">
+            <span>Confidence</span>
+            <strong>{{ getConfidencePercent() }}%</strong>
+          </div>
+        </div>
+
+        <div class="result-badges">
+          <span class="badge" [ngClass]="getSeverityClass(scanResult.suggestedSeverity)">
+            Severity {{ scanResult.suggestedSeverity }}
+          </span>
+          <span class="badge" [ngClass]="getSeverityClass(scanResult.suggestedPriority)">
+            Priority {{ scanResult.suggestedPriority }}
+          </span>
+        </div>
+
+        <div class="result-section">
+          <span class="result-label">Evidence Summary</span>
+          <p>{{ scanResult.evidenceSummary }}</p>
+        </div>
+
+        <div class="result-section">
+          <span class="result-label">Detected Issue</span>
+          <p>{{ scanResult.detectedIssue }}</p>
+        </div>
+
+        <div class="result-section">
+          <span class="result-label">Probable Root Cause</span>
+          <p>{{ scanResult.probableRootCause }}</p>
+        </div>
+
+        <div class="result-section">
+          <span class="result-label">Suggested Corrective Action</span>
+          <p>{{ scanResult.suggestedCorrectiveAction }}</p>
+        </div>
+
+        <div class="result-section">
+          <span class="result-label">Reasoning</span>
+          <p>{{ scanResult.reasoning }}</p>
+        </div>
+
+        <details class="extracted-text" *ngIf="scanResult.extractedText">
+          <summary>Extracted text</summary>
+          <pre>{{ scanResult.extractedText }}</pre>
+        </details>
+
+        <div class="created-banner" *ngIf="createdNonConformity">
+          Created non-conformity: <strong>{{ createdNonConformity.referenceCode }}</strong>
+        </div>
+
+        <div class="scanner-actions">
+          <button
+            pButton
+            pRipple
+            type="button"
+            label="Create Non-Conformity"
+            icon="pi pi-exclamation-circle"
+            [loading]="creatingNonConformity"
+            [disabled]="creatingNonConformity || !scanResult.canCreateNonConformity || !!createdNonConformity"
+            (click)="createNonConformity()">
+          </button>
+          <button
+            pButton
+            pRipple
+            type="button"
+            label="Create Corrective Action"
+            icon="pi pi-wrench"
+            class="p-button-outlined"
+            [loading]="creatingCorrectiveAction"
+            [disabled]="creatingCorrectiveAction || !createdNonConformity"
+            (click)="createCorrectiveAction()">
+          </button>
+        </div>
+
+        <small class="item-meta" *ngIf="!scanResult.canCreateNonConformity">
+          Select an audit or checklist item before scanning to enable non-conformity creation.
+        </small>
+      </div>
+    </div>
+  </div>
+</div>

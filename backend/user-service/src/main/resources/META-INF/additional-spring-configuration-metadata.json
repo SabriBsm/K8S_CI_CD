@@ -1,0 +1,11 @@
+{
+  "properties": [
+    {
+      "name": "spring.mail.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Active le vrai service e-mail SMTP. Si false, le mock est utilisé pour le développement.",
+      "defaultValue": true
+    }
+  ]
+}
+

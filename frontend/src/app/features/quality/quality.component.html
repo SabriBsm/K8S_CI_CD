@@ -1,0 +1,24 @@
+<div class="quality-shell">
+  <div class="ps-page-header">
+    <div class="header-title">
+      <h2>Quality Management</h2>
+      <p>Track standards, audits, findings, corrective actions, and compliance reports in one workflow.</p>
+    </div>
+    <div class="header-actions">
+      <button pButton pRipple icon="pi pi-chart-line" label="Dashboard" class="p-button-sm" routerLink="/quality/dashboard"></button>
+    </div>
+  </div>
+
+  <div class="quality-nav ps-page-card">
+    <a
+      *ngFor="let item of navItems"
+      [routerLink]="item.route"
+      class="quality-nav-item"
+      [class.active]="isActive(item.route)">
+      <i [class]="item.icon"></i>
+      <span>{{ item.label }}</span>
+    </a>
+  </div>
+
+  <router-outlet></router-outlet>
+</div>

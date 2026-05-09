@@ -1,0 +1,65 @@
+<div class="notifications-page">
+  <div class="page-head">
+    <div>
+      <h2 class="title">Notifications</h2>
+      <div class="subtitle">Grouped by project</div>
+    </div>
+
+    <div class="actions">
+      <button pButton type="button" label="Mark all as read" class="p-button-sm p-button-outlined"
+              (click)="markAllAsRead()" [disabled]="loading || groups.length === 0">
+      </button>
+      <button pButton type="button" icon="pi pi-refresh" class="p-button-sm"
+              (click)="load()" [disabled]="loading">
+      </button>
+    </div>
+  </div>
+
+  <p-divider></p-divider>
+
+  <div *ngIf="error" class="error">
+    {{ error }}
+  </div>
+
+  <div *ngIf="loading" class="loading">
+    Loading...
+  </div>
+
+  <div *ngIf="!loading && groups.length === 0 && !error" class="empty">
+    No notifications.
+  </div>
+
+  <div class="groups" *ngIf="!loading && groups.length > 0">
+    <section class="group" *ngFor="let g of groups">
+      <div class="group-head">
+        <div class="group-title">
+          <span class="project-name">{{ g.projectName }}</span>
+          <p-tag *ngIf="g.unreadCount > 0" [value]="g.unreadCount + ' unread'" severity="warning"></p-tag>
+          <p-tag *ngIf="g.unreadCount === 0" value="All read" severity="info"></p-tag>
+        </div>
+      </div>
+
+      <div class="items">
+        <article class="item" *ngFor="let n of g.notifications">
+          <div class="left">
+            <p-tag [value]="n.type" [severity]="getSeverity(n.type)" styleClass="type-tag"></p-tag>
+          </div>
+          <div class="body">
+            <div class="message" [class.unread]="!n.isRead">{{ n.message }}</div>
+              <div class="meta">
+                <span>{{ n.createdAt | date:'medium' }}</span>
+                <span class="dot">•</span>
+                    <span>{{ n.isRead ? 'Read' : 'Unread' }}</span>
+              </div>
+          </div>
+          <div class="right">
+            <button *ngIf="!n.isRead" pButton type="button" label="Mark as read" class="p-button-sm p-button-text"
+                    (click)="markAsRead(n)">
+            </button>
+          </div>
+        </article>
+      </div>
+    </section>
+  </div>
+</div>
+

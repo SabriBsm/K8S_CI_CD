@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: projet-service
+  namespace: plansync
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: projet-service
+  template:
+    metadata:
+      labels:
+        app: projet-service
+    spec:
+      containers:
+        - name: projet-service
+          image: sabriboussami/plansync-projet-service:2026-05-09-corsfix
+          ports:
+            - containerPort: 8082
+          env:
+            - name: SPRING_CONFIG_IMPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: plansync-app-config
+                  key: SPRING_CONFIG_IMPORT
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: "http://eureka-server:8761/eureka/"
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:mysql://mysql:3306/plansync_projet_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: plansync-app-config
+                  key: SPRING_DATASOURCE_USERNAME
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: plansync-secrets
+                  key: db-password
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: plansync-secrets
+                  key: jwt-secret
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: plansync-secrets
+                  key: smtp-password
+            - name: MANAGEMENT_HEALTH_MAIL_ENABLED
+              value: "false"
+            - name: USER_SERVICE_URL
+              value: "http://user-service:8079"
+            - name: APP_FRONTEND_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: plansync-app-config
+                  key: APP_FRONTEND_URL
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "512Mi"
+            limits:
+              cpu: "500m"
+              memory: "768Mi"
+          startupProbe:
+            tcpSocket:
+              port: 8082
+            initialDelaySeconds: 90
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8082
+            initialDelaySeconds: 180
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8082
+            initialDelaySeconds: 300
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 5

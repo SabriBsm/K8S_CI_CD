@@ -1,0 +1,2179 @@
+<div class="project-list-container">
+  <!-- Confirmation Dialog -->
+  <p-confirmDialog [style]="{width: '42vw'}" [breakpoints]="{'960px': '70vw', '640px': '100vw'}"></p-confirmDialog>
+
+  <!-- Header -->
+  <div class="header">
+    <h1>My Projects</h1>
+    <div class="header-actions">
+      <p-selectButton [options]="[{label: 'Grid', value: 'grid', icon: 'pi pi-th-large'}, {label: 'List', value: 'list', icon: 'pi pi-list'}]"
+                      [(ngModel)]="viewMode" optionLabel="label" optionValue="value"
+                      styleClass="view-mode-selector mr-3">
+        <ng-template let-item pTemplate="item">
+          <i [class]="item.icon"></i>
+        </ng-template>
+      </p-selectButton>
+      <button *ngIf="canCreateProjects()" pButton type="button" icon="pi pi-plus" (click)="openCreateDialog()"
+              label="New Project" class="p-button-success"></button>
+      <button pButton type="button" icon="pi pi-refresh" (click)="loadProjects()"
+              [loading]="loading" class="p-button-rounded"></button>
+    </div>
+  </div>
+
+  <div class="search-filter-section">
+  <span class="p-input-icon-left search-input-large">
+    <i class="pi pi-search"></i>
+    <input pInputText type="text" [(ngModel)]="searchTerm"
+           placeholder="Search projects by name..."
+           class="w-full"
+           (keyup.enter)="performSearch()"/>
+  </span>
+
+    <p-dropdown [(ngModel)]="statusFilter" [options]="statusOptions"
+                optionLabel="label" optionValue="value"
+                styleClass="filter-dropdown"
+                (onChange)="onStatusFilterChange()"></p-dropdown>
+
+    <button pButton type="button" icon="pi pi-search" label="Search"
+            (click)="performSearch()" class="p-button"></button>
+
+    <button pButton type="button"
+            label="Advanced Search"
+            [icon]="advancedSearchActive ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+            iconPos="right"
+            (click)="toggleAdvancedSearch()"
+            class="p-button-outlined p-button-info"></button>
+
+    <button pButton type="button" icon="pi pi-times"
+            (click)="clearFilters()" class="p-button-text p-button-secondary"></button>
+  </div>
+   <!-- Advanced Search Panel -->
+   <div *ngIf="advancedSearchActive" class="advanced-search-panel">
+     <div class="advanced-search-header">
+       <h3><i class="pi pi-sliders-v"></i> Advanced Search</h3>
+     </div>
+
+     <div class="advanced-search-form">
+       <!-- Row 1: Name, Status, Customer (Member with CUSTOMER role) -->
+       <div class="form-row">
+         <div class="form-group">
+           <label>Project Name</label>
+           <input pInputText type="text" [(ngModel)]="advancedFilters.name"
+                  placeholder="Enter project name" class="w-full"/>
+         </div>
+         <div class="form-group">
+           <label>Status</label>
+           <p-dropdown [(ngModel)]="advancedFilters.status" [options]="statusOptions"
+                       optionLabel="label" optionValue="value"
+                       placeholder="Select status" class="w-full"></p-dropdown>
+         </div>
+         <div *ngIf="!isCustomerUser()" class="form-group">
+           <label>Customer (Member Email)</label>
+           <p-autoComplete [(ngModel)]="advancedFilters.customer"
+                           [suggestions]="filteredCustomers"
+                           (completeMethod)="filterCustomers($event)"
+                           field="email"
+                           placeholder="Search by customer email..."
+                           [dropdown]="true"
+                           (onSelect)="onCustomerSelect($event)"
+                           class="w-full"></p-autoComplete>
+         </div>
+       </div>
+
+       <!-- Row 2: Created By, Start Date -->
+       <div class="form-row">
+         <div *ngIf="!isCustomerUser()" class="form-group">
+           <label>Created By</label>
+           <input pInputText type="text" [(ngModel)]="advancedFilters.createdBy"
+                  placeholder="Enter creator name" class="w-full"/>
+         </div>
+         <div class="form-group">
+           <label>Start Date (From)</label>
+           <p-calendar [(ngModel)]="advancedFilters.startDateFrom"
+                       dateFormat="dd/mm/yy" [showIcon]="true"
+                       placeholder="Select start date" class="w-full"></p-calendar>
+         </div>
+         <div class="form-group">
+           <label>Start Date (To)</label>
+           <p-calendar [(ngModel)]="advancedFilters.startDateTo"
+                       dateFormat="dd/mm/yy" [showIcon]="true"
+                       placeholder="Select end date" class="w-full"></p-calendar>
+         </div>
+       </div>
+
+       <!-- Row 3: Description -->
+       <div class="form-row-full">
+         <div class="form-group">
+           <label>Description (Search keywords)</label>
+           <textarea pInputTextarea [(ngModel)]="advancedFilters.description"
+                     placeholder="Search in description and objectives..." rows="2" class="w-full"></textarea>
+         </div>
+       </div>
+
+       <!-- Row 4: Progress Range -->
+       <div class="form-row">
+         <div class="form-group">
+           <label>Min Progress (%)</label>
+           <p-inputNumber [(ngModel)]="advancedFilters.minProgress"
+                          [min]="0" [max]="100" suffix="%" class="w-full"></p-inputNumber>
+         </div>
+         <div class="form-group">
+           <label>Max Progress (%)</label>
+           <p-inputNumber [(ngModel)]="advancedFilters.maxProgress"
+                          [min]="0" [max]="100" suffix="%" class="w-full"></p-inputNumber>
+         </div>
+         <div class="form-group checkbox-group">
+           <label>
+             <p-checkbox [(ngModel)]="advancedFilters.delayedOnly"
+                         [binary]="true"></p-checkbox>
+             Delayed Projects Only
+           </label>
+         </div>
+       </div>
+
+
+
+       <!-- Action Buttons -->
+       <div class="advanced-search-actions">
+         <button pButton type="button" label="Search" icon="pi pi-search"
+                 (click)="performAdvancedSearch()"
+                 class="p-button-success"></button>
+         <button pButton type="button" label="Reset" icon="pi pi-refresh"
+                 (click)="resetAdvancedFilters()"
+                 class="p-button-warning"></button>
+         <button pButton type="button" label="Cancel" icon="pi pi-times"
+                 (click)="toggleAdvancedSearch()"
+                 class="p-button-text"></button>
+       </div>
+     </div>
+   </div>
+
+   <!-- Rows Per Page Selector - Top -->
+   <div *ngIf="!loading && projects.length > 0" class="rows-per-page-selector">
+     <label for="rowsPerPageTop">Display:</label>
+     <p-dropdown id="rowsPerPageTop" [(ngModel)]="itemsPerPage" [options]="rowsPerPageOptions"
+                 (onChange)="onRowsPerPageChange()"
+                 styleClass="rows-per-page-dropdown">
+     </p-dropdown>
+     <span>projects per page</span>
+   </div>
+
+   <!-- Pagination - Under Display -->
+   <div class="pagination-section-centered">
+     <p-paginator
+       [rows]="itemsPerPage"
+       [totalRecords]="totalRecords"
+       [pageLinkSize]="5"
+       (onPageChange)="onPageChange($event)"
+       [showPageLinks]="false"
+       [showFirstLastIcon]="false"
+       [showCurrentPageReport]="true"
+       currentPageReportTemplate="{currentPage} out of {totalPages} pages"
+       styleClass="projects-paginator-centered">
+     </p-paginator>
+   </div>
+
+   <!-- Empty State -->
+   <div *ngIf="!loading && projects.length === 0" class="empty-state">
+    <i class="pi pi-inbox"></i>
+    <h3>No projects found</h3>
+    <p>You are not a member of any project at the moment</p>
+  </div>
+
+  <!-- Projects View (Grid or List) -->
+  <div *ngIf="!loading && projects.length > 0" class="projects-container">
+    <div *ngIf="viewMode === 'grid'" class="projects-grid">
+      <div *ngFor="let project of paginatedProjects" class="project-card">
+        <div class="card-header">
+          <h3 (click)="onSelectProject(project)" style="cursor: pointer; margin: 0; color: #0066cc;">
+            {{ project.name }}
+          </h3>
+          <p-tag [value]="getStatusLabel(project.status)" [severity]="getStatusSeverity(project.status)"></p-tag>
+        </div>
+
+        <p class="description">{{ project.description }}</p>
+
+        <div class="card-stats">
+          <div class="stat">
+            <div class="progress-header">
+              <label>Progress</label>
+              <div class="progress-meta">
+                <span class="progress-percent">{{ project.progress || 0 }}%</span>
+                <span class="progress-state progress-{{ getProgressLabel(project.progress || 0) }}">
+                  {{ getProgressLabelText(project.progress || 0) }}
+                </span>
+              </div>
+            </div>
+            <p-progressBar [value]="project.progress || 0" [showValue]="false"
+                           styleClass="project-progress-bar project-progress-bar--compact"></p-progressBar>
+          </div>
+
+          <div class="stat-row">
+            <div class="stat-item">
+              <label>Start Date</label>
+              <span>{{ formatDate(project.startDate) }}</span>
+            </div>
+            <div class="stat-item">
+              <label>End Date</label>
+              <span>{{ formatDate(project.endDate) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <div class="footer-row">
+            <span class="user-badge user-badge--stacked">
+              <span class="badge-label"><i class="pi pi-user"></i> Manager</span>
+              <span class="badge-value">{{ getProjectManagerDisplayName(project) }}</span>
+            </span>
+            <span class="user-badge user-badge--stacked">
+              <span class="badge-label"><i class="pi pi-building"></i> Customer</span>
+              <span class="badge-value">{{ getProjectCustomerDisplayName(project) }}</span>
+            </span>
+            <span class="user-badge user-badge--stacked">
+              <span class="badge-label"><i class="pi pi-users"></i> Team</span>
+              <span class="badge-value">{{ getProjectTeamSize(project) }}</span>
+            </span>
+          </div>
+
+          <div class="card-actions">
+            <button pButton type="button" icon="pi pi-eye"
+                    (click)="onSelectProject(project)" class="p-button-info p-button-sm"
+                    pTooltip="View Details" tooltipPosition="top"></button>
+            <button *ngIf="!isCustomerUser()" pButton type="button" icon="pi pi-check-square"
+                    (click)="openProjectTasks(project)" class="p-button-help p-button-sm"
+                    pTooltip="Open Tasks" tooltipPosition="top"></button>
+            <button *ngIf="canEdit(project)" pButton type="button" icon="pi pi-pencil"
+                    (click)="openEditDialog(project)" class="p-button-warning p-button-sm"
+                    pTooltip="Edit Project" tooltipPosition="top"></button>
+            <button *ngIf="canDelete(project)" pButton type="button" icon="pi pi-trash"
+                    (click)="openDeleteDialog(project)" class="p-button-danger p-button-sm"
+                    pTooltip="Delete Project" tooltipPosition="top"></button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="viewMode === 'list'" class="projects-list">
+      <p-table [value]="paginatedProjects" responsiveLayout="scroll" styleClass="p-datatable-striped p-datatable-gridlines">
+        <ng-template pTemplate="header">
+          <tr>
+            <th pSortableColumn="name">Name <p-sortIcon field="name"></p-sortIcon></th>
+            <th pSortableColumn="status">Status <p-sortIcon field="status"></p-sortIcon></th>
+            <th pSortableColumn="progress">Progress <p-sortIcon field="progress"></p-sortIcon></th>
+            <th pSortableColumn="startDate">Start Date <p-sortIcon field="startDate"></p-sortIcon></th>
+            <th pSortableColumn="endDate">End Date <p-sortIcon field="endDate"></p-sortIcon></th>
+            <th>Manager</th>
+            <th style="width: 150px">Actions</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-project>
+          <tr>
+            <td>
+              <span class="project-name-link" (click)="onSelectProject(project)">{{ project.name }}</span>
+            </td>
+            <td>
+              <p-tag [value]="getStatusLabel(project.status)" [severity]="getStatusSeverity(project.status)"></p-tag>
+            </td>
+            <td>
+              <div class="list-progress-cell">
+                <div class="progress-header">
+                  <span class="progress-percent">{{ project.progress || 0 }}%</span>
+                  <span class="progress-state progress-{{ getProgressLabel(project.progress || 0) }}">
+                    {{ getProgressLabelText(project.progress || 0) }}
+                  </span>
+                </div>
+                <p-progressBar [value]="project.progress || 0" [showValue]="false"
+                               styleClass="project-progress-bar project-progress-bar--compact project-progress-bar--table"></p-progressBar>
+              </div>
+            </td>
+            <td>{{ formatDate(project.startDate) }}</td>
+            <td>{{ formatDate(project.endDate) }}</td>
+            <td>
+              <div class="manager-cell">
+                <strong>{{ getProjectManagerDisplayName(project) }}</strong>
+                <small class="text-muted">Project Manager</small>
+              </div>
+            </td>
+            <td class="list-actions">
+              <button pButton type="button" icon="pi pi-eye" (click)="onSelectProject(project)"
+                      class="p-button-rounded p-button-info p-button-text" pTooltip="View Details"></button>
+              <button *ngIf="!isCustomerUser()" pButton type="button" icon="pi pi-check-square" (click)="openProjectTasks(project)"
+                      class="p-button-rounded p-button-help p-button-text" pTooltip="Open Tasks"></button>
+              <button *ngIf="canEdit(project)" pButton type="button" icon="pi pi-pencil" (click)="openEditDialog(project)"
+                      class="p-button-rounded p-button-warning p-button-text" pTooltip="Edit Project"></button>
+              <button *ngIf="canDelete(project)" pButton type="button" icon="pi pi-trash" (click)="openDeleteDialog(project)"
+                      class="p-button-rounded p-button-danger p-button-text" pTooltip="Delete Project"></button>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+
+  <!-- Loading Skeleton -->
+  <div *ngIf="loading" class="projects-grid">
+    <div class="project-card skeleton" *ngFor="let _ of [1,2,3]">
+      <p-skeleton height="2rem" styleClass="mb-2"></p-skeleton>
+      <p-skeleton height="4rem" styleClass="mb-2"></p-skeleton>
+      <p-skeleton height="1rem" styleClass="mb-2"></p-skeleton>
+    </div>
+  </div>
+</div>
+
+<!-- Project Detail Dialog -->
+<p-dialog
+  [(visible)]="displayDetailDialog"
+  [header]="selectedProject?.name"
+  [modal]="true"
+  [style]="{width: '78vw', height: '86vh', maxHeight: '86vh'}"
+  [breakpoints]="{'960px': '78vw', '640px': '95vw'}"
+  [maximizable]="true"
+  [baseZIndex]="9999"
+  styleClass="project-detail-dialog project-form-dialog project-form-dialog-readonly">
+  <ng-template pTemplate="header">
+    <div class="edit-header">
+      <h3>{{ selectedProject?.name }}</h3>
+      <p-tag *ngIf="selectedProject && selectedProject.status"
+             [value]="getStatusLabel(selectedProject!.status)"
+             [severity]="getStatusSeverity(selectedProject!.status)"></p-tag>
+    </div>
+  </ng-template>
+
+  <div *ngIf="selectedProject as project" class="project-detail">
+    <p-tabView>
+      <p-tabPanel header="General Info" leftIcon="pi pi-fw pi-home">
+        <div class="create-form edit-form-enhanced project-general-info">
+          <div class="project-general-info__hero">
+            <div class="project-general-info__hero-main">
+              <h4>{{ project.name }}</h4>
+              <p>{{ project.description || 'No description provided for this project.' }}</p>
+            </div>
+            <div class="project-general-info__hero-tags">
+              <p-tag *ngIf="project.status"
+                     [value]="getStatusLabel(project.status)"
+                     [severity]="getStatusSeverity(project.status)"></p-tag>
+              <p-tag [value]="project.visibility || 'PRIVATE'" severity="info"></p-tag>
+            </div>
+          </div>
+
+          <div class="project-general-info__stats">
+            <div class="project-general-info__stat-card">
+              <small>Start Date</small>
+              <strong>{{ formatDate(project.startDate) }}</strong>
+            </div>
+            <div class="project-general-info__stat-card">
+              <small>End Date</small>
+              <strong>{{ formatDate(project.endDate) }}</strong>
+            </div>
+            <div class="project-general-info__stat-card" *ngIf="project.actualEndDate">
+              <small>Actual End Date</small>
+              <strong>{{ formatDate(project.actualEndDate) }}</strong>
+            </div>
+            <div class="project-general-info__stat-card">
+              <small>Project Manager</small>
+              <strong>{{ getProjectManagerDisplayName(project) }}</strong>
+            </div>
+            <div class="project-general-info__stat-card">
+              <small>Customer</small>
+              <strong>{{ project.customerId ? getCustomerDisplayName(project.customerId) : '-' }}</strong>
+            </div>
+          </div>
+
+          <div class="form-section info-card">
+            <h5 class="section-label"><i class="pi pi-chart-bar"></i> Project Overview</h5>
+            <div class="progress-section">
+              <div class="progress-header">
+                <label>Project Progress</label>
+                <div class="progress-stats">
+                  <span class="progress-value">{{ project.progress || 0 }}%</span>
+                  <span class="progress-label" [ngClass]="'progress-' + getProgressLabel(project.progress || 0)">
+                    {{ getProgressLabelText(project.progress || 0) }}
+                  </span>
+                </div>
+              </div>
+              <p-progressBar [value]="project.progress || 0" [showValue]="false" styleClass="project-progress-bar"></p-progressBar>
+            </div>
+
+            <div class="form-group">
+              <label>Objectives</label>
+              <div class="readonly-field text-area">{{ project.objectives || '-' }}</div>
+            </div>
+          </div>
+
+          <div class="form-section info-card">
+            <h5 class="section-label"><i class="pi pi-info-circle"></i> Metadata</h5>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Created By</label>
+                <div class="readonly-field">{{ getProjectCreatedByDisplayName(project) }}</div>
+              </div>
+              <div class="form-group">
+                <label>Last Updated</label>
+                <div class="readonly-field">{{ formatDate(project.updatedAt) }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </p-tabPanel>
+
+      <p-tabPanel header="Members" leftIcon="pi pi-fw pi-users">
+        <div class="create-form">
+          <h4 class="section-title">Project Members</h4>
+
+          <div *ngIf="project.members && project.members.length > 0; else noMembers" class="table-container">
+            <p-table [value]="project.members || []" [paginator]="true" [rows]="5"
+                     responsiveLayout="scroll" styleClass="p-datatable-sm members-table">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th style="width: 40%"><i class="pi pi-user"></i> User</th>
+                  <th style="width: 25%"><i class="pi pi-shield"></i> Role</th>
+                  <th style="width: 20%"><i class="pi pi-calendar"></i> Joined Date</th>
+                  <th style="width: 15%">Status</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-member>
+                <tr>
+                  <td>
+                    <div class="member-user-cell">
+                      <i class="pi pi-user-circle"></i>
+                      <div>
+                        <strong>{{ getMemberEmail(member) }}</strong>
+                        <small class="text-muted" style="display:block;">{{ getMemberDisplayName(member) }}</small>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <p-tag [value]="member.role"
+                           [severity]="member.role === 'PROJECT_MANAGER' ? 'success' : member.role === 'PROJECT_MEMBER' ? 'info' : 'warning'"></p-tag>
+                  </td>
+                  <td>{{ formatDate(member.joinedDate) }}</td>
+                  <td>
+                    <p-tag [value]="member.isActive ? 'Active' : 'Inactive'"
+                           [severity]="member.isActive ? 'success' : 'danger'"></p-tag>
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+
+          <ng-template #noMembers>
+            <p class="text-center text-secondary">No members found for this project.</p>
+          </ng-template>
+        </div>
+      </p-tabPanel>
+
+      <p-tabPanel *ngIf="canViewProjectDocuments() && !isCustomerUser()" header="Documents" leftIcon="pi pi-fw pi-file">
+        <div class="create-form">
+          <h4 class="section-title">Project Documents</h4>
+
+          <p-table [value]="projectDocuments" [paginator]="true" [rows]="5"
+                   responsiveLayout="scroll" styleClass="p-datatable-sm documents-table">
+            <ng-template pTemplate="header">
+              <tr>
+                <th style="width: 28%">Name</th>
+                <th style="width: 16%">Type</th>
+                <th style="width: 12%">Version</th>
+                <th style="width: 18%">Uploaded By</th>
+                <th style="width: 14%">Uploaded At</th>
+                <th style="width: 12%">Open</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-document>
+              <tr>
+                <td>
+                  <div class="document-name-cell">
+                    <i class="pi pi-file"></i>
+                    <div>
+                      <strong>{{ document.name }}</strong>
+                      <small *ngIf="document.description">{{ document.description }}</small>
+                    </div>
+                  </div>
+                </td>
+                <td><p-tag [value]="getDocumentTypeLabel(document.type)" severity="info"></p-tag></td>
+                <td>{{ document.version }}</td>
+                <td>{{ document.uploadedBy }}</td>
+                <td>{{ formatDate(document.uploadedAt) }}</td>
+                <td>
+                  <button pButton type="button" icon="pi pi-external-link"
+                          class="p-button-text p-button-sm"
+                          pTooltip="Open file"
+                          (click)="openDocument(document.fileUrl)"></button>
+                  <button pButton type="button" icon="pi pi-download"
+                          class="p-button-text p-button-sm p-button-info"
+                          pTooltip="Download"
+                          (click)="downloadDocument(document.fileUrl, document.name)"></button>
+                </td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="6" class="text-center">No documents found</td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </p-tabPanel>
+
+      <p-tabPanel *ngIf="!isCustomerUser()" header="Meetings" leftIcon="pi pi-fw pi-calendar">
+        <div class="create-form">
+          <div class="section-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+            <h4 class="section-title" style="margin:0;">Project Meetings</h4>
+            <button pButton type="button" icon="pi pi-plus" label="Schedule Meeting"
+                    class="p-button-success p-button-sm" (click)="openMeetingDialog()"></button>
+          </div>
+
+          <div class="form-row" style="margin-bottom: 1rem;">
+            <div class="form-group" style="flex: 2; min-width: 240px;">
+              <label>Search meetings</label>
+              <input pInputText type="text" [(ngModel)]="meetingSearchTerm" placeholder="Title, description, location..." class="w-full" />
+            </div>
+            <div class="form-group" style="flex: 1; min-width: 180px;">
+              <label>Status</label>
+              <p-dropdown [(ngModel)]="meetingStatusFilter"
+                          [options]="[
+                            { label: 'All Status', value: '' },
+                            { label: 'Scheduled', value: 'SCHEDULED' },
+                            { label: 'Completed', value: 'COMPLETED' },
+                            { label: 'Cancelled', value: 'CANCELLED' }
+                          ]"
+                          optionLabel="label" optionValue="value"></p-dropdown>
+            </div>
+          </div>
+
+          <p class="info-text" style="color: #666; margin-bottom: 1rem;">
+            <i class="pi pi-microsoft"></i>
+            Store your Microsoft Teams URL in the meeting link field. Online meetings are highlighted as Teams-ready.
+          </p>
+
+          <p-tabView>
+            <p-tabPanel header="Upcoming ({{ upcomingProjectMeetings.length }})" leftIcon="pi pi-fw pi-clock">
+              <p-table [value]="getFilteredMeetings(upcomingProjectMeetings)" [paginator]="true" [rows]="5"
+                       responsiveLayout="scroll" styleClass="p-datatable-sm meetings-table">
+                <ng-template pTemplate="header">
+                  <tr>
+                    <th style="width: 24%">Title</th>
+                    <th style="width: 14%">Date</th>
+                    <th style="width: 14%">Time</th>
+                    <th style="width: 16%">Location</th>
+                    <th style="width: 14%">Status</th>
+                    <th style="width: 18%">Actions</th>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-meeting>
+                  <tr>
+                    <td>
+                      <strong>{{ meeting.title }}</strong>
+                      <small *ngIf="meeting.description" class="p-dblock" style="display:block; color:#666; font-size:0.8rem;">{{ meeting.description }}</small>
+                    </td>
+                    <td>{{ formatDate(meeting.meetingDate) }}</td>
+                    <td>{{ getMeetingTimeRange(meeting) }}</td>
+                    <td><p-tag [value]="getMeetingLocationLabel(meeting)" severity="info"></p-tag></td>
+                    <td><p-tag [value]="meeting.status" [severity]="getStatusMeetingSeverity(meeting.status)"></p-tag></td>
+                    <td>
+                      <div class="flex gap-2">
+                        <button *ngIf="meeting.meetingLink" pButton type="button"
+                                [icon]="isTeamsMeeting(meeting) ? 'pi pi-video' : 'pi pi-external-link'"
+                                class="p-button-text p-button-sm" pTooltip="{{ getMeetingLinkLabel(meeting) }}"
+                                (click)="openMeetingLink(meeting.meetingLink)"></button>
+                        <button *ngIf="canManageProjectMeetings()" pButton type="button" icon="pi pi-pencil"
+                                class="p-button-text p-button-sm p-button-warning" pTooltip="Edit"
+                                (click)="openMeetingDialog(meeting)"></button>
+                        <button *ngIf="canManageProjectMeetings()" pButton type="button" icon="pi pi-trash"
+                                class="p-button-text p-button-sm p-button-danger" pTooltip="Delete"
+                                (click)="deleteMeeting(meeting)"></button>
+                      </div>
+                    </td>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                  <tr><td colspan="6" class="text-center">No upcoming meetings scheduled</td></tr>
+                </ng-template>
+              </p-table>
+            </p-tabPanel>
+
+            <p-tabPanel header="Past ({{ pastProjectMeetings.length }})" leftIcon="pi pi-fw pi-history">
+              <p-table [value]="getFilteredMeetings(pastProjectMeetings)" [paginator]="true" [rows]="5"
+                       responsiveLayout="scroll" styleClass="p-datatable-sm meetings-table">
+                <ng-template pTemplate="header">
+                  <tr>
+                    <th style="width: 24%">Title</th>
+                    <th style="width: 14%">Date</th>
+                    <th style="width: 14%">Time</th>
+                    <th style="width: 16%">Location</th>
+                    <th style="width: 14%">Status</th>
+                    <th style="width: 18%">Actions</th>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-meeting>
+                  <tr>
+                    <td>
+                      <strong>{{ meeting.title }}</strong>
+                      <small *ngIf="meeting.description" class="p-dblock" style="display:block; color:#666; font-size:0.8rem;">{{ meeting.description }}</small>
+                    </td>
+                    <td>{{ formatDate(meeting.meetingDate) }}</td>
+                    <td>{{ getMeetingTimeRange(meeting) }}</td>
+                    <td><p-tag [value]="getMeetingLocationLabel(meeting)" severity="secondary"></p-tag></td>
+                    <td><p-tag [value]="meeting.status" [severity]="getStatusMeetingSeverity(meeting.status)"></p-tag></td>
+                    <td>
+                      <div class="flex gap-2">
+                        <button *ngIf="meeting.meetingLink" pButton type="button"
+                                [icon]="isTeamsMeeting(meeting) ? 'pi pi-video' : 'pi pi-external-link'"
+                                class="p-button-text p-button-sm" pTooltip="{{ getMeetingLinkLabel(meeting) }}"
+                                (click)="openMeetingLink(meeting.meetingLink)"></button>
+                        <button *ngIf="canManageProjectMeetings()" pButton type="button" icon="pi pi-pencil"
+                                class="p-button-text p-button-sm p-button-warning" pTooltip="Edit"
+                                (click)="openMeetingDialog(meeting)"></button>
+                        <button *ngIf="canManageProjectMeetings()" pButton type="button" icon="pi pi-trash"
+                                class="p-button-text p-button-sm p-button-danger" pTooltip="Delete"
+                                (click)="deleteMeeting(meeting)"></button>
+                      </div>
+                    </td>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                  <tr><td colspan="6" class="text-center">No past meetings available</td></tr>
+                </ng-template>
+              </p-table>
+            </p-tabPanel>
+
+            <p-tabPanel header="Calendar" leftIcon="pi pi-fw pi-calendar-plus">
+              <div style="display: grid; grid-template-columns: minmax(280px, 320px) 1fr; gap: 1rem; align-items: start;">
+                <div class="calendar-panel" style="background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 0.75rem;">
+                    <p-calendar
+                      [(ngModel)]="selectedMeetingCalendarDate"
+                      [inline]="true"
+                      [showWeek]="false"
+                      [monthNavigator]="true"
+                      [yearNavigator]="true"
+                      [yearRange]="'2024:2035'"
+                      (onSelect)="onMeetingCalendarDateChange($event)">
+                      <ng-template pTemplate="date" let-date>
+                        <span [class]="getMeetingDateClass(date)" style="border-radius:50%; width: 2em; height: 2em; display: flex; align-items: center; justify-content: center;">
+                          {{ date.day }}
+                        </span>
+                      </ng-template>
+                    </p-calendar>
+                  </div>
+
+                <div>
+                  <div class="section-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.75rem;">
+                    <h5 style="margin:0;">Meetings for {{ formatDate(selectedMeetingCalendarDate) }}</h5>
+                    <span class="text-sm text-500">{{ getFilteredMeetings(calendarMeetings).length }} meeting(s)</span>
+                  </div>
+
+                  <p-table [value]="getFilteredMeetings(calendarMeetings)" [paginator]="false" responsiveLayout="scroll" styleClass="p-datatable-sm meetings-table">
+                    <ng-template pTemplate="header">
+                      <tr>
+                        <th style="width: 28%">Title</th>
+                        <th style="width: 16%">Time</th>
+                        <th style="width: 18%">Location</th>
+                        <th style="width: 14%">Status</th>
+                        <th style="width: 24%">Actions</th>
+                      </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-meeting>
+                      <tr>
+                        <td>
+                          <strong>{{ meeting.title }}</strong>
+                          <small *ngIf="meeting.description" class="p-dblock" style="display:block; color:#666; font-size:0.8rem;">{{ meeting.description }}</small>
+                        </td>
+                        <td>{{ getMeetingTimeRange(meeting) }}</td>
+                        <td><p-tag [value]="getMeetingLocationLabel(meeting)" [severity]="isTeamsMeeting(meeting) ? 'success' : 'info'"></p-tag></td>
+                        <td><p-tag [value]="meeting.status" [severity]="getStatusMeetingSeverity(meeting.status)"></p-tag></td>
+                        <td>
+                          <div class="flex gap-2">
+                            <button *ngIf="meeting.meetingLink" pButton type="button"
+                                    [icon]="isTeamsMeeting(meeting) ? 'pi pi-video' : 'pi pi-external-link'"
+                                    class="p-button-text p-button-sm" pTooltip="{{ getMeetingLinkLabel(meeting) }}"
+                                    (click)="openMeetingLink(meeting.meetingLink)"></button>
+                            <button *ngIf="canManageProjectMeetings()" pButton type="button" icon="pi pi-pencil"
+                                    class="p-button-text p-button-sm p-button-warning" pTooltip="Edit"
+                                    (click)="openMeetingDialog(meeting)"></button>
+                            <button *ngIf="canManageProjectMeetings()" pButton type="button" icon="pi pi-trash"
+                                    class="p-button-text p-button-sm p-button-danger" pTooltip="Delete"
+                                    (click)="deleteMeeting(meeting)"></button>
+                          </div>
+                        </td>
+                      </tr>
+                    </ng-template>
+                    <ng-template pTemplate="emptymessage">
+                      <tr><td colspan="5" class="text-center">No meetings found for this day</td></tr>
+                    </ng-template>
+                  </p-table>
+                </div>
+              </div>
+            </p-tabPanel>
+          </p-tabView>
+        </div>
+      </p-tabPanel>
+
+      <p-tabPanel *ngIf="canViewProjectMilestones() && !isCustomerUser()" header="Milestones" leftIcon="pi pi-fw pi-flag">
+        <div class="create-form">
+          <h4 class="section-title">Project Milestones</h4>
+
+          <div class="milestones-timeline-panel milestones-timeline-panel--compact" *ngIf="projectMilestones.length > 0">
+            <div class="milestones-timeline-summary">
+              <span class="timeline-pill timeline-pill--achieved">
+                <i class="pi pi-check-circle"></i>
+                Achieved: {{ getProjectMilestoneTimelineStats().achieved }}
+              </span>
+              <span class="timeline-pill timeline-pill--current">
+                <i class="pi pi-play-circle"></i>
+                Current: {{ getProjectMilestoneTimelineStats().current }}
+              </span>
+              <span class="timeline-pill timeline-pill--upcoming">
+                <i class="pi pi-calendar"></i>
+                Upcoming: {{ getProjectMilestoneTimelineStats().upcoming }}
+              </span>
+              <span class="timeline-pill timeline-pill--overdue">
+                <i class="pi pi-exclamation-triangle"></i>
+                Overdue: {{ getProjectMilestoneTimelineStats().overdue }}
+              </span>
+            </div>
+
+            <div class="milestones-timeline">
+              <ng-container *ngFor="let entry of getProjectMilestoneTimelineEntries()">
+                <div *ngIf="entry.kind === 'marker'" class="milestones-timeline-marker">
+                  <span class="milestones-timeline-marker__dot">
+                    <i class="pi pi-clock"></i>
+                  </span>
+                  <div class="milestones-timeline-marker__content">
+                    <strong>{{ entry.label }}</strong>
+                    <small>Current point on the milestone timeline.</small>
+                  </div>
+                </div>
+
+                <div *ngIf="entry.kind === 'milestone'" class="milestones-timeline-item milestones-timeline-item--{{ entry.state }}">
+                  <span class="milestones-timeline-item__dot">
+                    <i [class]="getMilestoneTimelineIcon(entry.state)"></i>
+                  </span>
+                  <div class="milestones-timeline-item__content">
+                    <div class="milestones-timeline-item__header">
+                      <strong>{{ entry.milestone.title }}</strong>
+                      <p-tag [value]="getMilestoneTimelineStatusLabel(entry.state)" [severity]="getMilestoneTimelineSeverity(entry.state)"></p-tag>
+                    </div>
+                    <small class="milestones-timeline-item__date">{{ getMilestoneTimelineDateLabel(entry.milestone) }}</small>
+                    <p *ngIf="entry.milestone.description">{{ entry.milestone.description }}</p>
+                    <div class="milestones-timeline-item__meta">
+                      <p-tag [value]="entry.milestone.status" [severity]="getMilestoneStatusSeverity(entry.milestone.status)"></p-tag>
+                      <p-tag [value]="entry.milestone.isCritical ? 'Critical' : 'Standard'" [severity]="entry.milestone.isCritical ? 'warning' : 'info'"></p-tag>
+                    </div>
+                  </div>
+                </div>
+              </ng-container>
+            </div>
+          </div>
+
+          <p-table [value]="projectMilestones" [paginator]="true" [rows]="5"
+                   responsiveLayout="scroll" styleClass="p-datatable-sm milestones-table">
+            <ng-template pTemplate="header">
+              <tr>
+                <th style="width: 30%">Title</th>
+                <th style="width: 18%">Due Date</th>
+                <th style="width: 16%">Status</th>
+                <th style="width: 12%">Critical</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-milestone>
+              <tr>
+                <td>
+                  <strong>{{ milestone.title }}</strong>
+                  <small *ngIf="milestone.description" style="display:block; color:#666;">{{ milestone.description }}</small>
+                </td>
+                <td>{{ formatDate(milestone.dueDate) }}</td>
+                <td><p-tag [value]="milestone.status" [severity]="getMilestoneStatusSeverity(milestone.status)"></p-tag></td>
+                <td><p-tag [value]="milestone.isCritical ? 'Yes' : 'No'" [severity]="milestone.isCritical ? 'warning' : 'info'"></p-tag></td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr><td colspan="4" class="text-center">No milestones found for this project</td></tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </p-tabPanel>
+
+      <p-tabPanel *ngIf="canViewProjectNotifications() && !isCustomerUser()" header="Notifications" leftIcon="pi pi-fw pi-bell">
+        <div class="create-form">
+          <h4 class="section-title">Project Notifications</h4>
+
+          <p-table [value]="projectNotifications" [paginator]="true" [rows]="5"
+                   responsiveLayout="scroll" styleClass="p-datatable-sm notifications-table">
+            <ng-template pTemplate="header">
+              <tr>
+                <th style="width: 20%">Type</th>
+                <th style="width: 40%">Message</th>
+                <th style="width: 15%">Date</th>
+                <th style="width: 15%">Status</th>
+                <th style="width: 10%">Action</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-notification>
+              <tr>
+                <td><p-tag [value]="notification.type" [severity]="getNotificationSeverity(notification.type)"></p-tag></td>
+                <td><span [style.font-weight]="notification.isRead ? 'normal' : 'bold'">{{ getNotificationMessage(notification) }}</span></td>
+                <td>{{ formatDate(notification.createdAt) }}</td>
+                <td><p-tag [value]="notification.isRead ? 'Read' : 'Unread'" [severity]="notification.isRead ? 'info' : 'warning'"></p-tag></td>
+                <td>
+                  <button *ngIf="!notification.isRead" pButton type="button" icon="pi pi-check"
+                          class="p-button-text p-button-sm" pTooltip="Mark as read"
+                          (click)="markNotificationAsRead(notification.id)"></button>
+                </td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr><td colspan="5" class="text-center">No notifications for this project</td></tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </p-tabPanel>
+
+      <p-tabPanel *ngIf="!isCustomerUser()" header="AI Summary" leftIcon="pi pi-fw pi-bolt">
+        <div class="create-form">
+          <div class="section-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+            <h4 class="section-title" style="margin:0;">AI Project Summary</h4>
+            <button pButton type="button" icon="pi pi-refresh" label="Generate Summary"
+                    class="p-button-secondary p-button-sm" (click)="generateProjectSummary()"
+                    [loading]="loadingSummary"></button>
+          </div>
+
+          <div *ngIf="projectSummary" class="summary-content p-3 border-round bg-gray-50 mb-3" style="background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 1rem; border-radius: 4px;">
+            <div *ngFor="let section of getProjectSummarySections()" class="mb-3">
+              <h5 class="m-0 mb-2" style="color:#1f2937;">{{ section.title }}</h5>
+              <pre class="m-0" style="white-space: pre-wrap; line-height: 1.5; font-family: inherit; color:#374151;">{{ section.content }}</pre>
+            </div>
+          </div>
+
+          <div *ngIf="!projectSummary && !loadingSummary" class="text-center p-3 text-secondary">
+            Click the button to generate an intelligent summary of this project's status, risks, milestones, and meetings.
+          </div>
+
+          <div *ngIf="loadingSummary" class="text-center p-3">
+            <p-progressSpinner styleClass="w-2rem h-2rem" strokeWidth="4"></p-progressSpinner>
+            <p class="mt-2 text-secondary">Analyzing project data with AI...</p>
+          </div>
+        </div>
+      </p-tabPanel>
+
+    </p-tabView>
+
+  </div>
+
+  <!-- Action Buttons -->
+  <ng-template pTemplate="footer">
+    <div class="form-actions">
+      <button pButton type="button" label="Close" (click)="closeDetailDialog()"
+              class="p-button-text"></button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Edit Project Dialog -->
+<p-dialog
+  [(visible)]="displayEditDialog"
+  header="Edit Project"
+  [modal]="true"
+  [style]="{width: '78vw', height: '86vh', maxHeight: '86vh'}"
+  [breakpoints]="{'1200px': '88vw', '960px': '94vw', '640px': '100vw'}"
+  [maximizable]="true"
+  [baseZIndex]="9999"
+  styleClass="project-form-enhanced">
+  <ng-template pTemplate="header">
+    <div class="edit-header w-full flex justify-content-between align-items-center">
+      <h3 class="m-0">Edit: {{ selectedProject?.name }}</h3>
+      <p-tag *ngIf="selectedProject && selectedProject.status"
+             [value]="getStatusLabel(selectedProject!.status)"
+             [severity]="getStatusSeverity(selectedProject!.status)"></p-tag>
+    </div>
+  </ng-template>
+
+  <p-tabView>
+    <!-- Tab 1: General Info -->
+    <p-tabPanel header="General Info" leftIcon="pi pi-fw pi-home">
+      <div class="create-form-enhanced">
+        <div class="form-section">
+          <h5 class="section-label"><i class="pi pi-file"></i> Project Identification</h5>
+          <div class="form-row">
+            <div class="form-group mb-3">
+              <label for="editProjectName">Project Name *</label>
+              <div class="p-input-icon-left w-full">
+                <i class="pi pi-briefcase"></i>
+                <input pInputText id="editProjectName" [(ngModel)]="newProject.name"
+                       placeholder="Enter project name" class="w-full"
+                       (blur)="onFieldTouched('name')"/>
+              </div>
+              <small *ngIf="getProjectNameError()" class="p-error">{{ getProjectNameError() }}</small>
+            </div>
+
+            <div class="form-group">
+              <label for="editStatus">Status</label>
+              <p-dropdown id="editStatus" [(ngModel)]="newProject.status"
+                          [options]="[
+                            {label: 'Planned', value: 'PLANNED'},
+                            {label: 'In Progress', value: 'IN_PROGRESS'},
+                            {label: 'On Hold', value: 'ON_HOLD'},
+                            {label: 'Completed', value: 'COMPLETED'},
+                            {label: 'Cancelled', value: 'CANCELLED'}
+                          ]"
+                          optionLabel="label" optionValue="value" class="w-full">
+                <ng-template let-item pTemplate="item">
+                  <p-tag [value]="item.label" [severity]="getStatusSeverity(item.value)"></p-tag>
+                </ng-template>
+              </p-dropdown>
+            </div>
+          </div>
+
+          <div class="form-row mt-3">
+            <div class="form-group w-full">
+              <label for="editCustomer">Customer</label>
+              <p-autoComplete id="editCustomer"
+                              [(ngModel)]="selectedCustomer"
+                              [suggestions]="filteredCustomers"
+                              (completeMethod)="filterCustomers($event)"
+                              field="fullName"
+                              placeholder="Search and select a customer"
+                              [dropdown]="true"
+                              [forceSelection]="true"
+                              [showClear]="true"
+                              appendTo="body"
+                              class="w-full"
+                              (onSelect)="onCustomerSelect($event)">
+                <ng-template let-customer pTemplate="item">
+                  <div class="flex flex-column">
+                    <strong>{{ customer.fullName }}</strong>
+                    <small class="text-secondary">{{ customer.email }}</small>
+                  </div>
+                </ng-template>
+              </p-autoComplete>
+              <small class="text-secondary">Leave empty if the project has no customer.</small>
+            </div>
+          </div>
+
+          <div class="form-section mt-4">
+            <h5 class="section-label"><i class="pi pi-align-left"></i> Description & Objectives</h5>
+            <div class="form-group mb-3">
+              <label for="editDescription">Description</label>
+              <textarea id="editDescription" pInputTextarea [(ngModel)]="newProject.description"
+                        rows="3" class="w-full" placeholder="Short summary of the project"
+                        (blur)="onFieldTouched('description')"></textarea>
+              <small *ngIf="getDescriptionError()" class="p-error">{{ getDescriptionError() }}</small>
+            </div>
+            <div class="form-group">
+              <label for="editObjectives">Objectives</label>
+              <textarea id="editObjectives" pInputTextarea [(ngModel)]="newProject.objectives"
+                        rows="3" class="w-full" placeholder="What do you want to achieve?"
+                        (blur)="onFieldTouched('objectives')"></textarea>
+              <small *ngIf="getObjectivesError()" class="p-error">{{ getObjectivesError() }}</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section mt-4">
+          <h5 class="section-label"><i class="pi pi-chart-bar"></i> Performance Tracking</h5>
+          <div class="progress-edit-container border-round p-3 mb-4 bg-gray-50 border-1 border-200">
+            <div class="flex justify-content-between align-items-center mb-2">
+              <label class="font-bold">Project Progress</label>
+              <span class="text-2xl font-bold text-blue-600">
+                {{ getMilestoneCompletionPercent(projectMilestones) }}%
+              </span>
+            </div>
+            <p-progressBar [value]="getMilestoneCompletionPercent(projectMilestones)" [showValue]="false" styleClass="project-progress-bar h-1rem"></p-progressBar>
+            <small class="text-secondary" style="display:block; margin-top:0.5rem;">
+              Calculated automatically from milestones achieved/planned: {{ getMilestoneCompletionRatio(projectMilestones) }}
+            </small>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="editVisibility">Visibility</label>
+              <p-selectButton [options]="[{label: 'Private', value: 'PRIVATE'}, {label: 'Public', value: 'PUBLIC'}]"
+                              [(ngModel)]="newProject.visibility" optionLabel="label" optionValue="value"></p-selectButton>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section mt-4">
+          <h5 class="section-label"><i class="pi pi-calendar"></i> Timeline</h5>
+          <div class="form-row" style="display:flex; gap:1rem; flex-wrap:nowrap; align-items:flex-start;">
+            <div class="form-group" style="flex:1 1 0; min-width:0;">
+              <label for="editStartDate">Start Date *</label>
+              <p-calendar id="editStartDate" [(ngModel)]="newProject.startDate"
+                          dateFormat="dd/mm/yy" [showIcon]="true" class="w-full"
+                          [maxDate]="getEditStartDateMaxDate()" [readonlyInput]="true"
+                          (onSelect)="onStartDateSelected($event)" appendTo="body"></p-calendar>
+            </div>
+            <div class="form-group" style="flex:1 1 0; min-width:0;">
+              <label for="editEndDate">End Date *</label>
+              <p-calendar id="editEndDate" [(ngModel)]="newProject.endDate"
+                          dateFormat="dd/mm/yy" [showIcon]="true" class="w-full"
+                          [minDate]="getEditEndDateMinDate()" [readonlyInput]="true"
+                          (onSelect)="onEndDateSelected($event)" appendTo="body"></p-calendar>
+            </div>
+          </div>
+
+          <div class="form-row mt-3">
+            <div class="form-group w-full">
+              <label for="editActualEndDate">Actual End Date</label>
+              <p-calendar id="editActualEndDate" [(ngModel)]="newProject.actualEndDate"
+                          dateFormat="dd/mm/yy" [showIcon]="true" class="w-full"
+                          [minDate]="getEditActualEndDateMinDate()"
+                          [maxDate]="getEditActualEndDateMaxDate()"
+                          [readonlyInput]="true"
+                          appendTo="body"></p-calendar>
+              <small class="text-muted">Optional: set it when the project is really finished.</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </p-tabPanel>
+
+    <!-- Tab 2: Members -->
+    <p-tabPanel *ngIf="!isCustomerUser()" header="Members" leftIcon="pi pi-fw pi-users">
+      <div class="members-section" *ngIf="selectedProject as project">
+        <div class="table-container" *ngIf="(project.members?.length || 0) > 0">
+          <h4 class="section-title">Project Members ({{ getProjectTeamSize(project) }})</h4>
+          <p-table [value]="project.members || []" [paginator]="true" [rows]="5"
+                   responsiveLayout="scroll" styleClass="p-datatable-sm">
+            <ng-template pTemplate="header">
+              <tr>
+                <th pSortableColumn="userId" style="width: 35%">User Email</th>
+                <th pSortableColumn="role" style="width: 20%">Role</th>
+                <th pSortableColumn="joinedDate" style="width: 25%">Joined Date</th>
+                <th style="width: 10%">Status</th>
+                <th class="action-column" style="width: 10%">Actions</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-member>
+              <tr>
+                <td>
+                  <div class="member-user-cell">
+                    <i class="pi pi-user-circle"></i>
+                    <div>
+                      <strong>{{ getMemberEmail(member) }}</strong>
+                      <small class="text-muted" style="display:block;">{{ getMemberDisplayName(member) }}</small>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <p-tag [value]="member.role"
+                         [severity]="member.role === 'PROJECT_MANAGER' ? 'success' : member.role === 'PROJECT_MEMBER' ? 'info' : 'warning'">
+                  </p-tag>
+                </td>
+                <td>{{ formatDate(member.joinedDate) }}</td>
+                <td>
+                  <p-tag [value]="member.isActive ? 'Active' : 'Inactive'"
+                         [severity]="member.isActive ? 'success' : 'danger'"></p-tag>
+                </td>
+                <td class="action-column">
+                  <button pButton type="button" icon="pi pi-trash"
+                          (click)="removeMember(member.userId)"
+                          class="p-button-danger p-button-sm"
+                          pTooltip="Remove Member" tooltipPosition="top"
+                          [disabled]="isProjectManager(project) && member.userId === project.projectManagerId">
+                  </button>
+                </td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="5" class="text-center">No members found</td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+
+        <div class="add-member-section">
+          <h4 class="section-title" style="margin-top: 30px;">Add New Members</h4>
+
+          <div class="members-filter-panel">
+            <div class="filter-grid">
+              <div class="form-field">
+                <label for="editMemberFirstNameFilter">First Name</label>
+                <input id="editMemberFirstNameFilter" pInputText [(ngModel)]="editMemberFilters.firstName"
+                       (ngModelChange)="applyEditMemberFilters()" placeholder="Filter by first name" />
+              </div>
+              <div class="form-field">
+                <label for="editMemberLastNameFilter">Last Name</label>
+                <input id="editMemberLastNameFilter" pInputText [(ngModel)]="editMemberFilters.lastName"
+                       (ngModelChange)="applyEditMemberFilters()" placeholder="Filter by last name" />
+              </div>
+              <div class="form-field">
+                <label for="editMemberEmailFilter">Email</label>
+                <input id="editMemberEmailFilter" pInputText [(ngModel)]="editMemberFilters.email"
+                       (ngModelChange)="applyEditMemberFilters()" placeholder="Filter by email" />
+              </div>
+            </div>
+
+            <div class="members-filter-actions">
+              <button pButton type="button" icon="pi pi-refresh" label="Reset Filters"
+                      class="p-button-text" (click)="resetEditMemberFilters()"></button>
+            </div>
+          </div>
+
+          <div class="members-table-container">
+            <p-table [value]="editFilteredUsers" [paginator]="true" [rows]="5" responsiveLayout="scroll"
+                     styleClass="p-datatable-sm members-selection-table">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th>First Name</th>
+                  <th>Last Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Username</th>
+                  <th style="width: 140px; text-align: center;">Action</th>
+                </tr>
+              </ng-template>
+
+              <ng-template pTemplate="body" let-user>
+                <tr>
+                  <td>{{ user.firstName }}</td>
+                  <td>{{ user.lastName || '-' }}</td>
+                  <td>{{ user.email }}</td>
+                  <td><p-tag [value]="user.role || 'USER'" severity="info"></p-tag></td>
+                  <td>{{ user.username || '-' }}</td>
+                  <td style="text-align: center;">
+                    <button *ngIf="isUserAlreadyInProject(user)" pButton type="button" icon="pi pi-check-circle" label="Added"
+                            class="p-button-sm p-button-secondary" disabled></button>
+                    <button *ngIf="!isUserAlreadyInProject(user) && !isEditUserSelected(user)" pButton type="button" icon="pi pi-check" label="Select"
+                            class="p-button-sm p-button-info"
+                            (click)="toggleEditUserSelection(user)"></button>
+                    <button *ngIf="!isUserAlreadyInProject(user) && isEditUserSelected(user)" pButton type="button" icon="pi pi-times" label="Remove"
+                            class="p-button-sm p-button-warning"
+                            (click)="toggleEditUserSelection(user)"></button>
+                  </td>
+                </tr>
+              </ng-template>
+
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                  <td colspan="5" class="text-center text-muted">No users match the current filters.</td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+
+          <div class="add-member-form selected-member-panel">
+            <div class="form-field selected-member-summary">
+              <label>Selected Members</label>
+              <div class="selected-user-box" *ngIf="editSelectedUsersToAdd.length > 0; else noEditSelectedUsers">
+                <strong>{{ editSelectedUsersToAdd.length }} user(s) selected</strong>
+                <span>They will be added to the project after confirmation.</span>
+              </div>
+              <ng-template #noEditSelectedUsers>
+                <div class="selected-user-box empty">
+                  No user selected yet.
+                </div>
+              </ng-template>
+            </div>
+
+            <div class="form-field">
+              <button pButton type="button" icon="pi pi-plus" label="Add Selected Members"
+                      (click)="addSelectedMembersToExistingProject()"
+                      class="p-button-success w-full"
+                      [loading]="loading"
+                      [disabled]="editSelectedUsersToAdd.length === 0">
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </p-tabPanel>
+
+    <!-- Tab 3: Documents -->
+    <p-tabPanel *ngIf="!isCustomerUser()" header="Documents" leftIcon="pi pi-fw pi-file">
+      <div class="create-form">
+        <h4 class="section-title">Project Documents</h4>
+
+        <p-table [value]="projectDocuments" [paginator]="true" [rows]="5"
+                 responsiveLayout="scroll" styleClass="p-datatable-sm documents-table">
+          <ng-template pTemplate="header">
+            <tr>
+              <th style="width: 26%">Name</th>
+              <th style="width: 16%">Type</th>
+              <th style="width: 12%">Version</th>
+              <th style="width: 18%">Uploaded By</th>
+              <th style="width: 14%">Uploaded At</th>
+              <th style="width: 16%">Actions</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-document>
+            <tr>
+              <td><strong>{{ document.name }}</strong></td>
+              <td>{{ getDocumentTypeLabel(document.type) }}</td>
+              <td>{{ document.version }}</td>
+              <td>{{ document.uploadedBy }}</td>
+              <td>{{ formatDate(document.uploadedAt) }}</td>
+              <td>
+                <button pButton type="button" icon="pi pi-external-link"
+                        class="p-button-text p-button-sm"
+                        pTooltip="Open file"
+                        (click)="openDocument(document.fileUrl)"></button>
+                <button pButton type="button" icon="pi pi-download"
+                        class="p-button-text p-button-sm p-button-info"
+                        pTooltip="Download"
+                        (click)="downloadDocument(document.fileUrl, document.name)"></button>
+                  <button *ngIf="canManageProjectDocuments()" pButton type="button" icon="pi pi-pencil"
+                        class="p-button-text p-button-sm p-button-warning"
+                        pTooltip="Edit"
+                        (click)="startEditDocument(document)"></button>
+                  <button *ngIf="canManageProjectDocuments()" pButton type="button" icon="pi pi-trash"
+                        class="p-button-text p-button-sm p-button-danger"
+                        pTooltip="Delete"
+                        (click)="deleteDocument(document)"></button>
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="6" class="text-center">No documents found</td>
+            </tr>
+          </ng-template>
+        </p-table>
+
+        <div *ngIf="canManageProjectDocuments()" class="document-form" style="margin-top: 1.25rem;">
+          <h5>{{ editingDocumentId ? 'Edit Document' : 'Add Document' }}</h5>
+
+          <div class="document-form-grid">
+            <div class="form-group">
+              <label for="editDocumentName">Name *</label>
+              <input id="editDocumentName" pInputText [(ngModel)]="documentForm.name" placeholder="Document name" class="w-full" />
+            </div>
+
+            <div class="form-group">
+              <label for="editDocumentType">Type *</label>
+              <p-dropdown id="editDocumentType" [(ngModel)]="documentForm.type"
+                          [options]="projectDocumentTypeOptions"
+                          optionLabel="label" optionValue="value" class="w-full"></p-dropdown>
+            </div>
+
+            <div class="form-group">
+              <label for="editDocumentVersion">Version</label>
+              <input id="editDocumentVersion" pInputText [(ngModel)]="documentForm.version" placeholder="1.0" class="w-full" />
+            </div>
+
+            <div class="form-group">
+              <label for="editDocumentFileUrl">File URL *</label>
+              <input id="editDocumentFileUrl" pInputText [(ngModel)]="documentForm.fileUrl" placeholder="https://..." class="w-full" />
+            </div>
+
+            <div class="form-group">
+              <label for="editDocumentPdf">Upload PDF</label>
+              <input id="editDocumentPdf" type="file" accept="application/pdf,.pdf"
+                     (change)="onDocumentPdfSelected($event)" class="w-full" />
+            </div>
+          </div>
+
+          <small class="text-secondary" *ngIf="selectedDocumentFileName" style="display:block; margin-top:0.4rem;">
+            Selected PDF: {{ selectedDocumentFileName }}
+          </small>
+
+          <div class="form-group">
+            <label for="editDocumentDescription">Description</label>
+            <textarea id="editDocumentDescription" pInputTextarea [(ngModel)]="documentForm.description"
+                      rows="3" class="w-full" placeholder="Describe the document"></textarea>
+          </div>
+
+          <div class="document-form-actions">
+            <button pButton type="button" [label]="editingDocumentId ? 'Update Document' : 'Add Document'"
+                    icon="pi pi-save" class="p-button-success" (click)="saveDocument()"></button>
+            <button *ngIf="selectedDocumentFileName" pButton type="button" label="Clear PDF"
+                    icon="pi pi-times-circle" class="p-button-text p-button-secondary"
+                    (click)="clearDocumentFileSelection()"></button>
+            <button *ngIf="editingDocumentId" pButton type="button" label="Cancel Edit"
+                    icon="pi pi-times" class="p-button-text" (click)="cancelDocumentEdit()"></button>
+          </div>
+        </div>
+      </div>
+    </p-tabPanel>
+
+    <!-- Tab 4: Meetings -->
+    <p-tabPanel header="Meetings" leftIcon="pi pi-fw pi-calendar">
+      <div class="create-form">
+        <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h4 class="section-title" style="margin: 0;">Project Meetings</h4>
+          <button pButton type="button" icon="pi pi-plus" label="Schedule Meeting"
+                  class="p-button-success p-button-sm" (click)="openMeetingDialog()"></button>
+        </div>
+
+          <div class="form-row" style="margin-bottom: 1rem;">
+            <div class="form-group" style="flex: 2; min-width: 240px;">
+              <label>Search meetings</label>
+              <input pInputText type="text" [(ngModel)]="meetingSearchTerm" placeholder="Title, description, location..." class="w-full" />
+            </div>
+            <div class="form-group" style="flex: 1; min-width: 180px;">
+              <label>Status</label>
+              <p-dropdown [(ngModel)]="meetingStatusFilter"
+                          [options]="[
+                            { label: 'All Status', value: '' },
+                            { label: 'Scheduled', value: 'SCHEDULED' },
+                            { label: 'Completed', value: 'COMPLETED' },
+                            { label: 'Cancelled', value: 'CANCELLED' }
+                          ]"
+                          optionLabel="label" optionValue="value"></p-dropdown>
+            </div>
+          </div>
+
+        <p class="info-text" style="color: #666; margin-bottom: 1rem;">
+          <i class="pi pi-microsoft"></i>
+          Store your Microsoft Teams URL in the meeting link field. Online meetings will be highlighted as Teams-ready.
+        </p>
+
+        <p-tabView>
+          <p-tabPanel header="Upcoming ({{ upcomingProjectMeetings.length }})" leftIcon="pi pi-fw pi-clock">
+              <p-table [value]="getFilteredMeetings(upcomingProjectMeetings)" [paginator]="true" [rows]="5"
+                     responsiveLayout="scroll" styleClass="p-datatable-sm meetings-table">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th style="width: 24%">Title</th>
+                  <th style="width: 14%">Date</th>
+                  <th style="width: 14%">Time</th>
+                  <th style="width: 16%">Location</th>
+                  <th style="width: 14%">Status</th>
+                  <th style="width: 18%">Actions</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-meeting>
+                <tr>
+                  <td>
+                    <strong>{{ meeting.title }}</strong>
+                    <small *ngIf="meeting.description" class="p-dblock" style="display:block; color:#666; font-size:0.8rem;">{{ meeting.description }}</small>
+                  </td>
+                  <td>{{ formatDate(meeting.meetingDate) }}</td>
+                  <td>{{ getMeetingTimeRange(meeting) }}</td>
+                  <td><p-tag [value]="getMeetingLocationLabel(meeting)" severity="info"></p-tag></td>
+                  <td><p-tag [value]="meeting.status" [severity]="getStatusMeetingSeverity(meeting.status)"></p-tag></td>
+                  <td>
+                    <div class="flex gap-2">
+                      <button *ngIf="meeting.meetingLink" pButton type="button"
+                              [icon]="isTeamsMeeting(meeting) ? 'pi pi-video' : 'pi pi-external-link'"
+                              class="p-button-text p-button-sm" pTooltip="{{ getMeetingLinkLabel(meeting) }}"
+                              (click)="openMeetingLink(meeting.meetingLink)"></button>
+                        <button *ngIf="canManageProjectMeetings()" pButton type="button" icon="pi pi-pencil"
+                                class="p-button-text p-button-sm p-button-warning" pTooltip="Edit"
+                                (click)="openMeetingDialog(meeting)"></button>
+                        <button *ngIf="canManageProjectMeetings()" pButton type="button" icon="pi pi-trash"
+                                class="p-button-text p-button-sm p-button-danger" pTooltip="Delete"
+                                (click)="deleteMeeting(meeting)"></button>
+                    </div>
+                  </td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr><td colspan="6" class="text-center">No upcoming meetings scheduled</td></tr>
+              </ng-template>
+            </p-table>
+          </p-tabPanel>
+
+          <p-tabPanel header="Past ({{ pastProjectMeetings.length }})" leftIcon="pi pi-fw pi-history">
+              <p-table [value]="getFilteredMeetings(pastProjectMeetings)" [paginator]="true" [rows]="5"
+                     responsiveLayout="scroll" styleClass="p-datatable-sm meetings-table">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th style="width: 24%">Title</th>
+                  <th style="width: 14%">Date</th>
+                  <th style="width: 14%">Time</th>
+                  <th style="width: 16%">Location</th>
+                  <th style="width: 14%">Status</th>
+                  <th style="width: 18%">Actions</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-meeting>
+                <tr>
+                  <td>
+                    <strong>{{ meeting.title }}</strong>
+                    <small *ngIf="meeting.description" class="p-dblock" style="display:block; color:#666; font-size:0.8rem;">{{ meeting.description }}</small>
+                  </td>
+                  <td>{{ formatDate(meeting.meetingDate) }}</td>
+                  <td>{{ getMeetingTimeRange(meeting) }}</td>
+                  <td><p-tag [value]="getMeetingLocationLabel(meeting)" severity="secondary"></p-tag></td>
+                  <td><p-tag [value]="meeting.status" [severity]="getStatusMeetingSeverity(meeting.status)"></p-tag></td>
+                  <td>
+                    <div class="flex gap-2">
+                      <button *ngIf="meeting.meetingLink" pButton type="button"
+                              [icon]="isTeamsMeeting(meeting) ? 'pi pi-video' : 'pi pi-external-link'"
+                              class="p-button-text p-button-sm" pTooltip="{{ getMeetingLinkLabel(meeting) }}"
+                              (click)="openMeetingLink(meeting.meetingLink)"></button>
+                      <button *ngIf="canManageProjectMeetings()" pButton type="button" icon="pi pi-pencil"
+                              class="p-button-text p-button-sm p-button-warning" pTooltip="Edit"
+                              (click)="openMeetingDialog(meeting)"></button>
+                      <button *ngIf="canManageProjectMeetings()" pButton type="button" icon="pi pi-trash"
+                              class="p-button-text p-button-sm p-button-danger" pTooltip="Delete"
+                              (click)="deleteMeeting(meeting)"></button>
+                    </div>
+                  </td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr><td colspan="6" class="text-center">No past meetings available</td></tr>
+              </ng-template>
+            </p-table>
+          </p-tabPanel>
+
+          <p-tabPanel header="Calendar" leftIcon="pi pi-fw pi-calendar-plus">
+            <div style="display: grid; grid-template-columns: minmax(280px, 320px) 1fr; gap: 1rem; align-items: start;">
+              <div class="calendar-panel" style="background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 0.75rem;">
+                <p-calendar
+                  [(ngModel)]="selectedMeetingCalendarDate"
+                  [inline]="true"
+                  [showWeek]="false"
+                  [monthNavigator]="true"
+                  [yearNavigator]="true"
+                  [yearRange]="'2024:2035'"
+                  (onSelect)="onMeetingCalendarDateChange($event)">
+                  <ng-template pTemplate="date" let-date>
+                    <span [class]="getMeetingDateClass(date)" style="border-radius:50%; width: 2em; height: 2em; display: flex; align-items: center; justify-content: center;">
+                      {{ date.day }}
+                    </span>
+                  </ng-template>
+                </p-calendar>
+              </div>
+
+              <div>
+                <div class="section-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.75rem;">
+                  <h5 style="margin:0;">Meetings for {{ formatDate(selectedMeetingCalendarDate) }}</h5>
+                  <span class="text-sm text-500">{{ getFilteredMeetings(calendarMeetings).length }} meeting(s)</span>
+                </div>
+
+                <p-table [value]="getFilteredMeetings(calendarMeetings)" [paginator]="false" responsiveLayout="scroll" styleClass="p-datatable-sm meetings-table">
+                  <ng-template pTemplate="header">
+                    <tr>
+                      <th style="width: 28%">Title</th>
+                      <th style="width: 16%">Time</th>
+                      <th style="width: 18%">Location</th>
+                      <th style="width: 14%">Status</th>
+                      <th style="width: 24%">Actions</th>
+                    </tr>
+                  </ng-template>
+                  <ng-template pTemplate="body" let-meeting>
+                    <tr>
+                      <td>
+                        <strong>{{ meeting.title }}</strong>
+                        <small *ngIf="meeting.description" class="p-dblock" style="display:block; color:#666; font-size:0.8rem;">{{ meeting.description }}</small>
+                      </td>
+                      <td>{{ getMeetingTimeRange(meeting) }}</td>
+                      <td><p-tag [value]="getMeetingLocationLabel(meeting)" [severity]="isTeamsMeeting(meeting) ? 'success' : 'info'"></p-tag></td>
+                      <td><p-tag [value]="meeting.status" [severity]="getStatusMeetingSeverity(meeting.status)"></p-tag></td>
+                      <td>
+                        <div class="flex gap-2">
+                          <button *ngIf="meeting.meetingLink" pButton type="button"
+                                  [icon]="isTeamsMeeting(meeting) ? 'pi pi-video' : 'pi pi-external-link'"
+                                  class="p-button-text p-button-sm" pTooltip="{{ getMeetingLinkLabel(meeting) }}"
+                                  (click)="openMeetingLink(meeting.meetingLink)"></button>
+                          <button *ngIf="canManageProjectMeetings()" pButton type="button" icon="pi pi-pencil"
+                                  class="p-button-text p-button-sm p-button-warning" pTooltip="Edit"
+                                  (click)="openMeetingDialog(meeting)"></button>
+                          <button *ngIf="canManageProjectMeetings()" pButton type="button" icon="pi pi-trash"
+                                  class="p-button-text p-button-sm p-button-danger" pTooltip="Delete"
+                                  (click)="deleteMeeting(meeting)"></button>
+                        </div>
+                      </td>
+                    </tr>
+                  </ng-template>
+                  <ng-template pTemplate="emptymessage">
+                    <tr><td colspan="5" class="text-center">No meetings found for this day</td></tr>
+                  </ng-template>
+                </p-table>
+              </div>
+            </div>
+          </p-tabPanel>
+        </p-tabView>
+      </div>
+    </p-tabPanel>
+
+    <!-- Tab 5: Notifications -->
+      <p-tabPanel *ngIf="canViewProjectNotifications()" header="Notifications" leftIcon="pi pi-fw pi-bell">
+      <div class="create-form">
+        <h4 class="section-title">Project Notifications</h4>
+
+        <p-table [value]="projectNotifications" [paginator]="true" [rows]="5"
+                 responsiveLayout="scroll" styleClass="p-datatable-sm notifications-table">
+          <ng-template pTemplate="header">
+            <tr>
+              <th style="width: 18%">Type</th>
+              <th style="width: 30%">Message</th>
+              <th style="width: 16%">Recipient</th>
+              <th style="width: 14%">Date</th>
+              <th style="width: 12%">Status</th>
+              <th style="width: 10%">Action</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-notification>
+            <tr>
+              <td><p-tag [value]="notification.type" [severity]="getNotificationSeverity(notification.type)"></p-tag></td>
+              <td><span [style.font-weight]="notification.isRead ? 'normal' : 'bold'">{{ getNotificationMessage(notification) }}</span></td>
+              <td>{{ getNotificationRecipient(notification) }}</td>
+              <td>{{ formatDate(notification.createdAt) }}</td>
+              <td><p-tag [value]="notification.isRead ? 'Read' : 'Unread'" [severity]="notification.isRead ? 'info' : 'warning'"></p-tag></td>
+              <td>
+                <ng-container *ngIf="isSendingEmailNotification(notification.id); else sendEmailButton">
+                  <span class="flex align-items-center gap-2 text-secondary">
+                    <p-progressSpinner styleClass="w-1rem h-1rem" strokeWidth="5"></p-progressSpinner>
+                    <span>Sending email...</span>
+                  </span>
+                </ng-container>
+                <ng-template #sendEmailButton>
+                  <button *ngIf="canManageProjectNotifications()" pButton type="button" icon="pi pi-envelope"
+                          class="p-button-text p-button-sm" pTooltip="Send notification email"
+                          (click)="notifyNotificationByEmail(notification)"></button>
+                </ng-template>
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr><td colspan="6" class="text-center">No notifications for this project</td></tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </p-tabPanel>
+
+    <p-tabPanel *ngIf="!isCustomerUser()" header="AI Summary" leftIcon="pi pi-fw pi-bolt">
+      <div class="create-form">
+        <div class="section-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+          <h4 class="section-title" style="margin:0;">AI Project Summary</h4>
+          <button pButton type="button" icon="pi pi-refresh" label="Generate Summary"
+                  class="p-button-secondary p-button-sm" (click)="generateProjectSummary()"
+                  [loading]="loadingSummary"></button>
+        </div>
+
+        <div *ngIf="projectSummary" class="summary-content p-3 border-round bg-gray-50 mb-3" style="background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 1rem; border-radius: 4px;">
+          <div *ngFor="let section of getProjectSummarySections()" class="mb-3">
+            <h5 class="m-0 mb-2" style="color:#1f2937;">{{ section.title }}</h5>
+            <pre class="m-0" style="white-space: pre-wrap; line-height: 1.5; font-family: inherit; color:#374151;">{{ section.content }}</pre>
+          </div>
+        </div>
+
+        <div *ngIf="!projectSummary && !loadingSummary" class="text-center p-3 text-secondary">
+          Click the button to generate an intelligent summary of this project's status, risks, milestones, and meetings.
+        </div>
+
+        <div *ngIf="loadingSummary" class="text-center p-3">
+          <p-progressSpinner styleClass="w-2rem h-2rem" strokeWidth="4"></p-progressSpinner>
+          <p class="mt-2 text-secondary">Analyzing project data with AI...</p>
+        </div>
+      </div>
+    </p-tabPanel>
+
+
+    <!-- Tab 4: Milestones -->
+    <p-tabPanel *ngIf="!isCustomerUser()" header="Milestones" leftIcon="pi pi-fw pi-flag">
+      <div class="create-form">
+        <div class="section-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+          <h4 class="section-title" style="margin:0;">Project Milestones ({{ projectMilestones.length }})</h4>
+          <button *ngIf="canManageProjectMilestones()" pButton type="button" icon="pi pi-plus" label="Add Milestone"
+                  class="p-button-success p-button-sm" (click)="openMilestoneDialog()"></button>
+        </div>
+
+        <div class="milestones-timeline-panel milestones-timeline-panel--compact" *ngIf="projectMilestones.length > 0">
+          <div class="milestones-timeline-summary">
+            <span class="timeline-pill timeline-pill--achieved">
+              <i class="pi pi-check-circle"></i>
+              Achieved: {{ getProjectMilestoneTimelineStats().achieved }}
+            </span>
+            <span class="timeline-pill timeline-pill--current">
+              <i class="pi pi-play-circle"></i>
+              Current: {{ getProjectMilestoneTimelineStats().current }}
+            </span>
+            <span class="timeline-pill timeline-pill--upcoming">
+              <i class="pi pi-calendar"></i>
+              Upcoming: {{ getProjectMilestoneTimelineStats().upcoming }}
+            </span>
+            <span class="timeline-pill timeline-pill--overdue">
+              <i class="pi pi-exclamation-triangle"></i>
+              Overdue: {{ getProjectMilestoneTimelineStats().overdue }}
+            </span>
+          </div>
+
+          <div class="milestones-timeline">
+            <ng-container *ngFor="let entry of getProjectMilestoneTimelineEntries()">
+              <div *ngIf="entry.kind === 'marker'" class="milestones-timeline-marker">
+                <span class="milestones-timeline-marker__dot">
+                  <i class="pi pi-clock"></i>
+                </span>
+                <div class="milestones-timeline-marker__content">
+                  <strong>{{ entry.label }}</strong>
+                  <small>Current point on the milestone timeline.</small>
+                </div>
+              </div>
+
+              <div *ngIf="entry.kind === 'milestone'" class="milestones-timeline-item milestones-timeline-item--{{ entry.state }}">
+                <span class="milestones-timeline-item__dot">
+                  <i [class]="getMilestoneTimelineIcon(entry.state)"></i>
+                </span>
+                <div class="milestones-timeline-item__content">
+                  <div class="milestones-timeline-item__header">
+                    <strong>{{ entry.milestone.title }}</strong>
+                    <p-tag [value]="getMilestoneTimelineStatusLabel(entry.state)" [severity]="getMilestoneTimelineSeverity(entry.state)"></p-tag>
+                  </div>
+                  <small class="milestones-timeline-item__date">{{ getMilestoneTimelineDateLabel(entry.milestone) }}</small>
+                  <p *ngIf="entry.milestone.description">{{ entry.milestone.description }}</p>
+                  <div class="milestones-timeline-item__meta">
+                    <p-tag [value]="entry.milestone.status" [severity]="getMilestoneStatusSeverity(entry.milestone.status)"></p-tag>
+                    <p-tag [value]="entry.milestone.isCritical ? 'Critical' : 'Standard'" [severity]="entry.milestone.isCritical ? 'warning' : 'info'"></p-tag>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+
+        <p-table [value]="projectMilestones" [paginator]="true" [rows]="5"
+                 responsiveLayout="scroll" styleClass="p-datatable-sm milestones-table">
+          <ng-template pTemplate="header">
+            <tr>
+              <th style="width: 30%">Title</th>
+              <th style="width: 18%">Due Date</th>
+              <th style="width: 16%">Status</th>
+              <th style="width: 12%">Critical</th>
+              <th style="width: 24%">Actions</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-milestone>
+            <tr>
+              <td>
+                <strong>{{ milestone.title }}</strong>
+                <small *ngIf="milestone.description" style="display:block; color:#666;">{{ milestone.description }}</small>
+              </td>
+              <td>{{ formatDate(milestone.dueDate) }}</td>
+              <td><p-tag [value]="milestone.status" [severity]="getMilestoneStatusSeverity(milestone.status)"></p-tag></td>
+              <td><p-tag [value]="milestone.isCritical ? 'Yes' : 'No'" [severity]="milestone.isCritical ? 'warning' : 'info'"></p-tag></td>
+              <td>
+                <div class="flex gap-2 flex-wrap">
+                  <button *ngIf="canManageProjectMilestones()" pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-warning p-button-sm"
+                          pTooltip="Edit" (click)="openMilestoneDialog(milestone)"></button>
+                  <button *ngIf="canManageProjectMilestones() && milestone.status !== 'ACHIEVED'" pButton type="button" icon="pi pi-check" class="p-button-text p-button-sm p-button-success"
+                          pTooltip="Mark achieved"
+                          (click)="markMilestoneAchieved(milestone)"></button>
+                  <button *ngIf="canManageProjectMilestones()" pButton type="button" icon="pi pi-trash" class="p-button-text p-button-danger p-button-sm"
+                          pTooltip="Delete" (click)="deleteMilestone(milestone)"></button>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr><td colspan="5" class="text-center">No milestones found for this project</td></tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </p-tabPanel>
+  </p-tabView>
+
+  <!-- Form Actions -->
+  <div class="form-actions" style="margin-top: 20px;">
+    <button pButton type="button" label="Cancel" (click)="cancelEdit()"
+            class="p-button-text"></button>
+    <button pButton type="button" label="Update Project" (click)="updateProject()"
+            [loading]="loading" [disabled]="!isEditFormValid()" class="p-button-success"></button>
+  </div>
+</p-dialog>
+
+<!-- Delete Confirmation Dialog -->
+<p-dialog
+  [(visible)]="displayDeleteDialog"
+  header="Delete Project"
+  [modal]="true"
+  [style]="{width: '30vw'}">
+  <div *ngIf="selectedProject">
+    <p>Are you sure you want to delete the project <strong>{{ selectedProject.name }}</strong>?</p>
+    <p><small class="p-error">This action cannot be undone.</small></p>
+  </div>
+  <ng-template pTemplate="footer">
+    <button pButton type="button" label="Cancel" (click)="displayDeleteDialog = false"
+            class="p-button-text"></button>
+    <button pButton type="button" label="Delete" (click)="confirmDelete()"
+            [loading]="loading" class="p-button-danger"></button>
+  </ng-template>
+</p-dialog>
+
+<!-- Meeting Dialog -->
+<p-dialog [(visible)]="displayMeetingDialog" [header]="editingMeetingId ? 'Edit Meeting' : 'Schedule New Meeting'"
+          [modal]="true" [style]="{width: '450px'}" styleClass="p-fluid">
+  <ng-template pTemplate="content">
+    <div class="field mb-3">
+      <label for="m-title" class="font-bold">Title *</label>
+      <input type="text" pInputText id="m-title" [(ngModel)]="meetingForm.title" required autofocus />
+    </div>
+    <div class="field mb-3">
+      <label for="m-desc" class="font-bold">Description</label>
+      <textarea id="m-desc" pInputTextarea [(ngModel)]="meetingForm.description" rows="3"></textarea>
+    </div>
+    <div class="field mb-3">
+      <label for="m-date" class="font-bold">Date *</label>
+      <input type="date" pInputText id="m-date" [(ngModel)]="meetingForm.meetingDate"
+             [attr.min]="!editingMeetingId ? getMeetingDateMinValue() : null" required />
+    </div>
+    <div class="formgrid grid flex gap-3 mb-3">
+      <div class="field col flex-1">
+        <label for="m-start" class="font-bold">Start Time</label>
+        <input type="time" pInputText id="m-start" [(ngModel)]="meetingForm.startTime" />
+      </div>
+      <div class="field col flex-1">
+        <label for="m-end" class="font-bold">End Time</label>
+        <input type="time" pInputText id="m-end" [(ngModel)]="meetingForm.endTime" />
+      </div>
+    </div>
+    <div class="field mb-3">
+      <label for="m-loc" class="font-bold">Location / Type</label>
+      <p-dropdown id="m-loc-type" [(ngModel)]="meetingForm.location"
+                  [options]="[{label: 'Online', value: 'ONLINE'}, {label: 'Physical / Other', value: 'OTHER'}]"
+                  optionLabel="label" optionValue="value"></p-dropdown>
+    </div>
+    <div class="field mb-3" *ngIf="meetingForm.location === 'ONLINE'">
+      <label for="m-link" class="font-bold">Meeting Link (Teams/Zoom/Meet)</label>
+      <input type="text" pInputText id="m-link" [(ngModel)]="meetingForm.meetingLink" placeholder="https://..." />
+    </div>
+    <div class="field mb-3" *ngIf="meetingForm.location !== 'ONLINE'">
+      <label for="m-addr" class="font-bold">Address / Room</label>
+      <input type="text" pInputText id="m-addr" [(ngModel)]="meetingForm.location" placeholder="Conference Room A" />
+    </div>
+    <div class="field mb-3">
+      <label for="m-status" class="font-bold">Status</label>
+      <p-dropdown id="m-status" [(ngModel)]="meetingForm.status"
+                  [options]="[{label: 'Scheduled', value: 'SCHEDULED'}, {label: 'Completed', value: 'COMPLETED'}, {label: 'Cancelled', value: 'CANCELLED'}]"
+                  optionLabel="label" optionValue="value"></p-dropdown>
+    </div>
+  </ng-template>
+
+  <ng-template pTemplate="footer">
+    <button pButton type="button" label="Cancel" icon="pi pi-times" class="p-button-text" (click)="displayMeetingDialog = false"></button>
+    <button pButton type="button" label="Save" icon="pi pi-check" class="p-button-text" (click)="saveMeeting()"></button>
+  </ng-template>
+</p-dialog>
+
+<!-- Milestone Dialog -->
+<p-dialog [(visible)]="displayMilestoneDialog" [header]="editingMilestoneId ? 'Edit Milestone' : 'New Milestone'"
+          [modal]="true" [style]="{width: '450px'}" styleClass="p-fluid" (onHide)="closeMilestoneDialog()">
+  <ng-template pTemplate="content">
+    <div class="field mb-3">
+      <label for="ms-title" class="font-bold">Title *</label>
+      <input type="text" pInputText id="ms-title" [(ngModel)]="milestoneForm.title" required autofocus />
+    </div>
+    <div class="field mb-3">
+      <label for="ms-desc" class="font-bold">Description</label>
+      <textarea id="ms-desc" pInputTextarea [(ngModel)]="milestoneForm.description" rows="3"></textarea>
+    </div>
+    <div class="field mb-3">
+      <label for="ms-date" class="font-bold">Due Date *</label>
+      <input type="date" pInputText id="ms-date" [(ngModel)]="milestoneForm.dueDate"
+             [attr.min]="!editingMilestoneId ? getMilestoneDateMinValue() : null" required />
+    </div>
+    <div *ngIf="editingMilestoneId !== null || milestoneForm.status === 'ACHIEVED'" class="field mb-3">
+      <label for="ms-actual-completion-date" class="font-bold">Actual Completion Date</label>
+      <input type="date" pInputText id="ms-actual-completion-date" [(ngModel)]="milestoneForm.actualCompletionDate" />
+      <small class="text-600">Required when the milestone status is achieved.</small>
+    </div>
+    <div class="field mb-3">
+      <label for="ms-status" class="font-bold">Status</label>
+      <p-dropdown id="ms-status" [(ngModel)]="milestoneForm.status"
+                  [options]="milestoneStatusOptions"
+                  optionLabel="label" optionValue="value"></p-dropdown>
+    </div>
+    <div class="field-checkbox mb-3 flex align-items-center gap-2">
+      <p-checkbox id="ms-crit" [(ngModel)]="milestoneForm.isCritical" [binary]="true"></p-checkbox>
+      <label for="ms-crit" class="font-bold">Critical Path Milestone</label>
+    </div>
+  </ng-template>
+
+  <ng-template pTemplate="footer">
+    <button pButton type="button" label="Cancel" icon="pi pi-times" class="p-button-text" (click)="closeMilestoneDialog()"></button>
+    <button pButton type="button" label="Save" icon="pi pi-check" class="p-button-text" (click)="saveMilestone()" [loading]="isSubmittingMilestones"></button>
+  </ng-template>
+</p-dialog>
+
+
+<!-- Create Project Dialog -->
+<p-dialog
+  [(visible)]="displayCreateDialog"
+  [modal]="true"
+  [style]="{width: '78vw', height: '86vh', maxHeight: '86vh'}"
+  [breakpoints]="{'1200px': '88vw', '960px': '94vw', '640px': '100vw'}"
+  [maximizable]="true"
+  [baseZIndex]="9999"
+  styleClass="project-form-enhanced project-create-dialog">
+
+  <ng-template pTemplate="header">
+    <div class="edit-header create-header w-full flex justify-content-between align-items-center">
+      <div class="create-header-text">
+        <h3 class="m-0">Create Project</h3>
+        <small>Start a new project with a simple form</small>
+      </div>
+      <p-tag value="NEW" severity="success"></p-tag>
+    </div>
+  </ng-template>
+
+  <p-tabView>
+    <!-- Tab 1: General Info -->
+    <p-tabPanel header="General Info" leftIcon="pi pi-fw pi-home">
+      <div class="create-form-enhanced">
+        <div class="form-section">
+          <h5 class="section-label"><i class="pi pi-file"></i> Project Identification</h5>
+          <div class="form-row">
+            <div class="form-group mb-3">
+              <label for="projectName">Project Name *</label>
+              <input pInputText id="projectName" [(ngModel)]="newProject.name"
+                     placeholder="Enter project name" class="w-full"
+                     (blur)="onFieldTouched('name')"/>
+              <small *ngIf="getProjectNameError()" class="p-error">{{ getProjectNameError() }}</small>
+            </div>
+
+            <div class="form-group">
+              <label for="visibility">Visibility</label>
+              <p-selectButton [options]="[{label: 'Private', value: 'PRIVATE'}, {label: 'Public', value: 'PUBLIC'}]"
+                              [(ngModel)]="newProject.visibility" optionLabel="label" optionValue="value"></p-selectButton>
+            </div>
+          </div>
+
+          <div class="form-row mt-3">
+            <div class="form-group w-full">
+              <label for="customer">Customer</label>
+              <p-autoComplete id="customer"
+                              [(ngModel)]="selectedCustomer"
+                              [suggestions]="filteredCustomers"
+                              (completeMethod)="filterCustomers($event)"
+                              field="fullName"
+                              placeholder="Select a customer (optional)"
+                              [dropdown]="true"
+                              [forceSelection]="true"
+                              [showClear]="true"
+                              appendTo="body"
+                              class="w-full"
+                              (onSelect)="onCustomerSelect($event)">
+                <ng-template let-customer pTemplate="item">
+                  <div class="flex flex-column">
+                    <strong>{{ customer.fullName }}</strong>
+                    <small class="text-secondary">{{ customer.email }}</small>
+                  </div>
+                </ng-template>
+              </p-autoComplete>
+              <small class="text-secondary" style="display:block; margin-top: 0.5rem;">Leave empty if the project has no customer.</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section mt-4">
+          <h5 class="section-label"><i class="pi pi-align-left"></i> Description & Objectives</h5>
+          <div class="form-group mb-3">
+            <label for="description">Description</label>
+            <textarea id="description" pInputTextarea [(ngModel)]="newProject.description"
+                      rows="3" class="w-full" placeholder="Short summary of the project"
+                      (blur)="onFieldTouched('description')"></textarea>
+            <small *ngIf="getDescriptionError()" class="p-error">{{ getDescriptionError() }}</small>
+          </div>
+          <div class="form-group">
+            <label for="objectives">Objectives</label>
+            <textarea id="objectives" pInputTextarea [(ngModel)]="newProject.objectives"
+                      rows="3" class="w-full" placeholder="What do you want to achieve?"
+                      (blur)="onFieldTouched('objectives')"></textarea>
+            <small *ngIf="getObjectivesError()" class="p-error">{{ getObjectivesError() }}</small>
+          </div>
+        </div>
+
+        <div class="form-section mt-4">
+          <h5 class="section-label"><i class="pi pi-calendar"></i> Timeline</h5>
+          <div class="form-row" style="display:flex; gap:1rem; flex-wrap:nowrap; align-items:flex-start;">
+            <div class="form-group" style="flex:1 1 0; min-width:0;">
+              <label for="startDate">Start Date *</label>
+              <p-calendar id="startDate" [(ngModel)]="newProject.startDate"
+                          dateFormat="dd/mm/yy" [showIcon]="true" class="w-full"
+                          [minDate]="today" [readonlyInput]="true"
+                          (onSelect)="onStartDateSelected($event)" appendTo="body"></p-calendar>
+              <small *ngIf="getStartDateError()" class="p-error">{{ getStartDateError() }}</small>
+            </div>
+            <div class="form-group" style="flex:1 1 0; min-width:0;">
+              <label for="endDate">End Date *</label>
+              <p-calendar id="endDate" [(ngModel)]="newProject.endDate"
+                          dateFormat="dd/mm/yy" [showIcon]="true" class="w-full"
+                          [minDate]="getCreateEndDateMinDate()" [readonlyInput]="true"
+                          (onSelect)="onEndDateSelected($event)" appendTo="body"></p-calendar>
+              <small *ngIf="getEndDateError()" class="p-error">{{ getEndDateError() }}</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </p-tabPanel>
+
+    <!-- Tab 2: Members -->
+    <p-tabPanel header="Members" leftIcon="pi pi-fw pi-users">
+      <div class="add-member-section">
+        <h4 class="section-title">Team Composition</h4>
+
+        <div class="members-filter-panel">
+          <div class="filter-grid">
+            <div class="form-field">
+              <label>First Name</label>
+              <input pInputText [(ngModel)]="memberFilters.firstName"
+                     (ngModelChange)="applyMemberFilters()" placeholder="Filter by first name" />
+            </div>
+            <div class="form-field">
+              <label>Last Name</label>
+              <input pInputText [(ngModel)]="memberFilters.lastName"
+                     (ngModelChange)="applyMemberFilters()" placeholder="Filter by last name" />
+            </div>
+            <div class="form-field">
+              <label>Email</label>
+              <input pInputText [(ngModel)]="memberFilters.email"
+                     (ngModelChange)="applyMemberFilters()" placeholder="Filter by email" />
+            </div>
+          </div>
+          <div class="members-filter-actions">
+            <button pButton type="button" icon="pi pi-refresh" label="Reset Filters"
+                    class="p-button-text" (click)="resetMemberFilters()"></button>
+          </div>
+        </div>
+
+        <div class="members-table-container">
+          <p-table [value]="filteredUsers" [paginator]="true" [rows]="5" responsiveLayout="scroll"
+                   styleClass="p-datatable-sm members-selection-table">
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th style="width: 140px; text-align: center;">Action</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-user>
+              <tr>
+                <td>{{ getUserDisplayName(user) }}</td>
+                <td>{{ user.email }}</td>
+                <td style="text-align: center;">
+                  <button *ngIf="!isUserSelectedForCreation(user) && !isMemberAlreadyAdded(user)"
+                          pButton type="button" icon="pi pi-plus" label="Select"
+                          class="p-button-sm p-button-info" (click)="toggleUserSelection(user)"></button>
+                  <button *ngIf="isUserSelectedForCreation(user)"
+                          pButton type="button" icon="pi pi-times" label="Remove"
+                          class="p-button-sm p-button-warning" (click)="toggleUserSelection(user)"></button>
+                  <p-tag *ngIf="isMemberAlreadyAdded(user)" value="Added" severity="success"></p-tag>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+
+        <div class="selected-members-summary mt-3" *ngIf="selectedUsersToAdd.length > 0">
+          <button pButton type="button" icon="pi pi-check" label="Confirm {{ selectedUsersToAdd.length }} Selection(s)"
+                  class="p-button-success" (click)="addMemberToCreateForm()"></button>
+        </div>
+
+        <div class="final-members-list mt-4" *ngIf="projectMembersToAdd.length > 0">
+          <h5>Project Team ({{ projectMembersToAdd.length }})</h5>
+          <div class="flex flex-wrap gap-2">
+            <p-chip *ngFor="let m of projectMembersToAdd" [label]="m.fullName" [removable]="true"
+                    (onRemove)="removeMemberFromCreateForm(m)"></p-chip>
+          </div>
+        </div>
+      </div>
+    </p-tabPanel>
+
+    <!-- Tab 3: Milestones -->
+    <p-tabPanel header="Milestones" leftIcon="pi pi-fw pi-flag">
+      <div class="create-form">
+        <div class="section-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+          <h4 class="section-title" style="margin:0;">Project Milestones ({{ pendingMilestones.length }})</h4>
+          <button pButton type="button" icon="pi pi-plus" label="Add Milestone"
+                  class="p-button-success p-button-sm" (click)="openPendingMilestoneDialog()"></button>
+        </div>
+
+        <div class="milestones-timeline-panel milestones-timeline-panel--compact" *ngIf="pendingMilestones.length > 0">
+          <div class="milestones-timeline-summary">
+            <span class="timeline-pill timeline-pill--achieved">
+              <i class="pi pi-check-circle"></i>
+              Achieved: {{ getPendingMilestoneTimelineStats().achieved }}
+            </span>
+            <span class="timeline-pill timeline-pill--current">
+              <i class="pi pi-play-circle"></i>
+              Current: {{ getPendingMilestoneTimelineStats().current }}
+            </span>
+            <span class="timeline-pill timeline-pill--upcoming">
+              <i class="pi pi-calendar"></i>
+              Upcoming: {{ getPendingMilestoneTimelineStats().upcoming }}
+            </span>
+            <span class="timeline-pill timeline-pill--overdue">
+              <i class="pi pi-exclamation-triangle"></i>
+              Overdue: {{ getPendingMilestoneTimelineStats().overdue }}
+            </span>
+          </div>
+          <div class="progress-edit-container border-round p-3 mb-3 bg-gray-50 border-1 border-200">
+            <div class="flex justify-content-between align-items-center mb-2">
+              <label class="font-bold">Projected Progress</label>
+              <span class="text-2xl font-bold text-blue-600">{{ getMilestoneCompletionPercent(pendingMilestones) }}%</span>
+            </div>
+            <p-progressBar [value]="getMilestoneCompletionPercent(pendingMilestones)" [showValue]="false" styleClass="project-progress-bar h-1rem"></p-progressBar>
+            <small class="text-secondary" style="display:block; margin-top:0.5rem;">
+              Milestones achieved/planned: {{ getMilestoneCompletionRatio(pendingMilestones) }}
+            </small>
+          </div>
+
+          <div class="milestones-timeline">
+            <ng-container *ngFor="let entry of getPendingMilestoneTimelineEntries()">
+              <div *ngIf="entry.kind === 'marker'" class="milestones-timeline-marker">
+                <span class="milestones-timeline-marker__dot">
+                  <i class="pi pi-clock"></i>
+                </span>
+                <div class="milestones-timeline-marker__content">
+                  <strong>{{ entry.label }}</strong>
+                  <small>Current point on the milestone timeline.</small>
+                </div>
+              </div>
+
+              <div *ngIf="entry.kind === 'milestone'" class="milestones-timeline-item milestones-timeline-item--{{ entry.state }}">
+                <span class="milestones-timeline-item__dot">
+                  <i [class]="getMilestoneTimelineIcon(entry.state)"></i>
+                </span>
+                <div class="milestones-timeline-item__content">
+                  <div class="milestones-timeline-item__header">
+                    <strong>{{ entry.milestone.title }}</strong>
+                    <p-tag [value]="getMilestoneTimelineStatusLabel(entry.state)" [severity]="getMilestoneTimelineSeverity(entry.state)"></p-tag>
+                  </div>
+                  <small class="milestones-timeline-item__date">{{ getMilestoneTimelineDateLabel(entry.milestone) }}</small>
+                  <p *ngIf="entry.milestone.description">{{ entry.milestone.description }}</p>
+                  <div class="milestones-timeline-item__meta">
+                    <p-tag [value]="entry.milestone.status" [severity]="getMilestoneStatusSeverity(entry.milestone.status)"></p-tag>
+                    <p-tag [value]="entry.milestone.isCritical ? 'Critical' : 'Standard'" [severity]="entry.milestone.isCritical ? 'warning' : 'info'"></p-tag>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+
+        <p-table [value]="pendingMilestones" [paginator]="true" [rows]="5"
+                 responsiveLayout="scroll" styleClass="p-datatable-sm milestones-table">
+          <ng-template pTemplate="header">
+            <tr>
+              <th style="width: 30%">Title</th>
+              <th style="width: 18%">Due Date</th>
+              <th style="width: 16%">Status</th>
+              <th style="width: 12%">Critical</th>
+              <th style="width: 24%">Actions</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-milestone let-i="rowIndex">
+            <tr>
+              <td>
+                <strong>{{ milestone.title }}</strong>
+                <small *ngIf="milestone.description" style="display:block; color:#666;">{{ milestone.description }}</small>
+              </td>
+              <td>{{ formatDate(milestone.dueDate) }}</td>
+              <td><p-tag [value]="milestone.status" [severity]="getMilestoneStatusSeverity(milestone.status)"></p-tag></td>
+              <td><p-tag [value]="milestone.isCritical ? 'Yes' : 'No'" [severity]="milestone.isCritical ? 'warning' : 'info'"></p-tag></td>
+              <td>
+                <div class="flex gap-2 flex-wrap">
+                  <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-warning p-button-sm"
+                          pTooltip="Edit" (click)="openPendingMilestoneDialog(i)"></button>
+                  <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-danger p-button-sm"
+                          pTooltip="Delete" (click)="removePendingMilestone(i)"></button>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr><td colspan="5" class="text-center">No milestones found for this project</td></tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </p-tabPanel>
+
+    <!-- Tab 3: Documents -->
+    <p-tabPanel header="Documents" leftIcon="pi pi-fw pi-file">
+      <div class="document-upload-section">
+        <h4 class="section-title">Initial Documents</h4>
+
+        <div class="document-form bg-gray-50 p-3 border-round border-1 border-200 mb-4">
+          <div class="grid">
+            <div class="col-12 md:col-6 field">
+              <label class="font-bold">Document Name *</label>
+              <input pInputText [(ngModel)]="documentForm.name" placeholder="E.g. Project Charter" />
+            </div>
+            <div class="col-12 md:col-6 field">
+              <label class="font-bold">Type</label>
+              <p-dropdown [(ngModel)]="documentForm.type" [options]="projectDocumentTypeOptions"
+                          optionLabel="label" optionValue="value"></p-dropdown>
+            </div>
+            <div class="col-12 field">
+              <label class="font-bold">File Source *</label>
+              <input pInputText [(ngModel)]="documentForm.fileUrl" placeholder="https://drive.google.com/..." />
+            </div>
+            <div class="col-12 md:col-6 field">
+              <label class="font-bold">Upload PDF</label>
+              <input type="file" accept="application/pdf,.pdf"
+                     (change)="onDocumentPdfSelected($event)" class="w-full" />
+            </div>
+          </div>
+          <small class="text-secondary" *ngIf="selectedDocumentFileName" style="display:block; margin-top:0.5rem;">
+            Selected PDF: {{ selectedDocumentFileName }}
+          </small>
+          <div class="flex gap-2 mt-2 flex-wrap">
+            <button pButton type="button" icon="pi pi-plus"
+                    [label]="pendingDocumentEditIndex !== null ? 'Update Document in List' : 'Add Document to List'"
+                  class="p-button-info p-button-sm mt-2" (click)="savePendingDocument()"></button>
+            <button *ngIf="pendingDocumentEditIndex !== null" pButton type="button" icon="pi pi-times"
+                    label="Cancel Edit" class="p-button-text p-button-secondary mt-2"
+                    (click)="cancelPendingDocumentEdit()"></button>
+            <button *ngIf="selectedDocumentFileName" pButton type="button" icon="pi pi-times-circle"
+                    label="Clear PDF" class="p-button-text p-button-secondary mt-2"
+                    (click)="clearDocumentFileSelection()"></button>
+          </div>
+        </div>
+
+        <p-table *ngIf="pendingDocuments.length > 0" [value]="pendingDocuments" class="mt-3">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Name</th>
+              <th>Type</th>
+              <th style="width: 200px;">Actions</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-doc let-i="rowIndex">
+            <tr>
+              <td>
+                {{ doc.name }}
+                <small *ngIf="isPdfUrl(doc.fileUrl)" class="text-secondary" style="display:block;">PDF</small>
+              </td>
+              <td><p-tag [value]="doc.type" severity="info"></p-tag></td>
+              <td>
+                <button pButton type="button" icon="pi pi-external-link" class="p-button-text p-button-sm"
+                        pTooltip="Open file" (click)="openDocument(doc.fileUrl)"></button>
+                <button pButton type="button" icon="pi pi-download" class="p-button-text p-button-sm p-button-info"
+                        pTooltip="Download" (click)="downloadDocument(doc.fileUrl, doc.name)"></button>
+                <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm p-button-warning"
+                        pTooltip="Edit" (click)="startEditPendingDocument(i)"></button>
+                <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-danger"
+                        (click)="removePendingDocument(i)"></button>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </p-tabPanel>
+
+    <p-tabPanel header="Meetings" leftIcon="pi pi-fw pi-calendar">
+      <div class="create-form">
+        <h4 class="section-title">Project Meetings</h4>
+        <p class="text-secondary">Meetings can be scheduled after the project is created.</p>
+      </div>
+    </p-tabPanel>
+
+    <p-tabPanel header="Notifications" leftIcon="pi pi-fw pi-bell">
+      <div class="create-form">
+        <h4 class="section-title">Project Notifications</h4>
+        <p class="text-secondary">Notifications are available once the project is created.</p>
+      </div>
+    </p-tabPanel>
+
+    <p-tabPanel header="AI Summary" leftIcon="pi pi-fw pi-bolt">
+      <div class="create-form">
+        <h4 class="section-title">AI Project Summary</h4>
+        <p class="text-secondary">The AI summary is generated from project data after creation.</p>
+      </div>
+    </p-tabPanel>
+  </p-tabView>
+
+  <ng-template pTemplate="footer">
+    <div class="form-actions">
+      <button pButton type="button" label="Cancel" (click)="cancelCreate()"
+              class="p-button-text"></button>
+      <button pButton type="button" label="Create Project" (click)="createProject()"
+              [loading]="loading" [disabled]="!canCreateProjects() || !isFormValid()" class="p-button-success"></button>
+    </div>
+  </ng-template>
+</p-dialog>

@@ -1,0 +1,56 @@
+.quality-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+
+  h3 {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+
+  p {
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+  }
+}
+
+.section-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sort-dropdown {
+  min-width: 11rem;
+}
+
+.item-title {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.item-meta {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  margin-top: 0.2rem;
+}
+
+.action-btns {
+  display: flex;
+  justify-content: center;
+}
+
+.doc-link {
+  color: var(--primary-600);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}

@@ -1,0 +1,224 @@
+<div class="dashboard">
+  <ng-container *ngIf="!loading; else loadingState">
+    <ng-container *ngIf="isCustomerUser(); else defaultDashboard">
+      <div class="ps-page-header">
+        <div class="header-title">
+          <h2>{{ getGreeting() }}, {{ currentUser?.firstName || currentUser?.email }}</h2>
+          <p>Customer overview.</p>
+        </div>
+      </div>
+
+      <div class="ps-grid cols-2" style="margin-bottom: 1.5rem">
+        <div class="ps-stat-card">
+          <div class="stat-icon" style="background:#ede9fe">
+            <i class="pi pi-briefcase" style="color:#6d28d9"></i>
+          </div>
+          <div style="flex:1">
+            <div class="stat-value">{{ customerProjectCount }}</div>
+            <div class="stat-label">Projects where you are customer</div>
+          </div>
+        </div>
+        <div class="ps-stat-card">
+          <div class="stat-icon" style="background:#dbeafe">
+            <i class="pi pi-chart-line" style="color:#1d4ed8"></i>
+          </div>
+          <div style="flex:1">
+            <div class="stat-value">{{ customerCompletedVsPlannedRatio }}</div>
+            <div class="stat-label">Completed vs planned</div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <ng-template #defaultDashboard>
+    <!-- Header -->
+    <div class="ps-page-header">
+      <div class="header-title">
+        <h2>{{ getGreeting() }}, {{ currentUser?.firstName || currentUser?.email }} 👋</h2>
+        <p>{{ dashboardStats?.scope === 'GLOBAL' ? 'Global analytics' : 'My projects analytics' }} — overview of project health, progress, and operational signals.</p>
+      </div>
+      <div class="header-actions" style="display:flex; gap: .75rem; align-items:center;">
+        <p-tag *ngIf="dashboardStats" [value]="dashboardStats.scope === 'GLOBAL' ? 'GLOBAL' : 'USER'" severity="info"></p-tag>
+        <div class="analysis-window-selector" style="display:flex; gap:.35rem; flex-wrap:wrap;">
+          <button
+            *ngFor="let option of analysisWindowOptions"
+            pButton
+            type="button"
+            class="p-button-sm"
+            [label]="option.label"
+            [class.p-button-outlined]="selectedAnalysisWindow !== option.value"
+            [class.p-button-raised]="selectedAnalysisWindow === option.value"
+            (click)="onAnalysisWindowChange(option.value)">
+          </button>
+        </div>
+        <button pButton icon="pi pi-refresh" label="Refresh" class="p-button-sm p-button-outlined" (click)="refresh()"></button>
+      </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="ps-grid cols-4" style="margin-bottom: 1.5rem">
+      <div class="ps-stat-card" *ngFor="let stat of statCards">
+        <div class="stat-icon" [style.background]="stat.iconBg">
+          <i [class]="stat.icon" [style.color]="stat.iconColor"></i>
+        </div>
+        <div style="flex:1">
+          <div class="stat-value">{{ stat.value }}</div>
+          <div class="stat-label">{{ stat.label }}</div>
+          <div *ngIf="stat.hint" class="stat-change positive">{{ stat.hint }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Headline metrics -->
+    <div class="ps-page-card" style="margin-bottom: 1.5rem">
+      <div class="card-header-bar" style="margin-bottom: 1rem">
+        <h4>Portfolio summary</h4>
+        <span class="ps-section-title">Generated at {{ dashboardStats?.generatedAt | date:'short' }}</span>
+      </div>
+      <div class="ps-grid cols-4">
+        <div *ngFor="let metric of headlineMetrics" class="ps-page-card" style="padding: 1rem; border: 1px solid var(--surface-100); box-shadow: none;">
+          <div style="display:flex; align-items:center; gap:.75rem;">
+            <div class="stat-icon" [style.background]="metric.color + '20'">
+              <i [class]="metric.icon" [style.color]="metric.color"></i>
+            </div>
+            <div>
+              <div class="stat-value" style="font-size:1.15rem">{{ metric.value }}</div>
+              <div class="stat-label">{{ metric.label }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top: 1rem; padding: 1rem; border: 1px solid var(--surface-100); border-radius: var(--border-radius-md); background: var(--surface-0);">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap: 1rem; margin-bottom: .75rem;">
+          <div>
+            <div class="stat-label">Portfolio health</div>
+            <div style="font-weight:700; font-size:1.1rem;">{{ portfolioHealthLabel }}</div>
+          </div>
+          <div style="font-weight:800; font-size:1.5rem; color: var(--primary-600);">{{ portfolioHealthScore }}/100</div>
+        </div>
+        <p-progressBar [value]="portfolioHealthScore" [showValue]="false"></p-progressBar>
+      </div>
+    </div>
+
+    <!-- Charts row 1 -->
+    <div class="charts-row" style="margin-bottom: 1.5rem">
+      <div class="ps-page-card chart-card">
+        <div class="card-header-bar">
+          <h4>Projects by status</h4>
+          <span class="ps-section-title">{{ dashboardStats?.totalProjects || 0 }} projects</span>
+        </div>
+        <div class="chart-container">
+          <p-chart type="doughnut" [data]="projectStatusChartData" [options]="projectStatusChartOptions" height="240px"></p-chart>
+        </div>
+      </div>
+
+      <div class="ps-page-card chart-card">
+        <div class="card-header-bar">
+          <h4>Milestones by status</h4>
+          <span class="ps-section-title">{{ dashboardStats?.totalMilestones || 0 }} milestones</span>
+        </div>
+        <div class="chart-container">
+          <p-chart type="bar" [data]="milestoneChartData" [options]="milestoneChartOptions" height="240px"></p-chart>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts row 2 -->
+    <div class="charts-row" style="margin-bottom: 1.5rem">
+      <div class="ps-page-card chart-card">
+        <div class="card-header-bar">
+          <h4>Meetings overview</h4>
+          <span class="ps-section-title">{{ dashboardStats?.totalMeetings || 0 }} meetings</span>
+        </div>
+        <div class="chart-container">
+          <p-chart type="doughnut" [data]="meetingChartData" [options]="meetingChartOptions" height="240px"></p-chart>
+        </div>
+      </div>
+
+      <div class="ps-page-card chart-card">
+        <div class="card-header-bar">
+          <h4>Documents by type</h4>
+          <span class="ps-section-title">{{ dashboardStats?.totalDocuments || 0 }} documents</span>
+        </div>
+        <div class="chart-container">
+          <p-chart type="bar" [data]="documentChartData" [options]="documentChartOptions" height="240px"></p-chart>
+        </div>
+      </div>
+    </div>
+
+    <!-- Executive overview -->
+    <div class="ps-page-card chart-card" style="margin-bottom: 1.5rem;">
+      <div class="card-header-bar" style="margin-bottom: 1rem">
+        <h4>Portfolio volume by entity</h4>
+        <span class="ps-section-title">Projects, members, milestones and more</span>
+      </div>
+      <div class="chart-container" style="height: 320px;">
+        <p-chart type="bar" [data]="operationalChartData" [options]="operationalChartOptions" height="320px"></p-chart>
+      </div>
+    </div>
+
+    <!-- Bottom row -->
+    <div class="bottom-row">
+
+
+      <div class="ps-page-card" style="display:flex; flex-direction:column; gap:1rem;">
+        <div class="card-header-bar">
+          <h4>Members & workflow signals</h4>
+          <span class="ps-section-title">Operational summary</span>
+        </div>
+
+        <div class="ps-grid cols-2">
+          <div class="ps-page-card" style="padding: 1rem; border: 1px solid var(--surface-100); box-shadow:none;">
+            <div class="stat-label" style="margin-bottom:.5rem">Members by role</div>
+            <div class="activity-list" style="gap:.65rem">
+              <div *ngFor="let item of memberBreakdown" style="display:flex; justify-content:space-between; align-items:center; gap:1rem;">
+                <span>{{ item.label }}</span>
+                <strong>{{ item.value }}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="ps-page-card" style="padding: 1rem; border: 1px solid var(--surface-100); box-shadow:none;">
+            <div class="stat-label" style="margin-bottom:.5rem">Key counters</div>
+            <div class="activity-list" style="gap:.65rem">
+              <div style="display:flex; justify-content:space-between;"><span>Active projects</span><strong>{{ dashboardStats?.activeProjects || 0 }}</strong></div>
+              <div style="display:flex; justify-content:space-between;"><span>Completed projects</span><strong>{{ dashboardStats?.completedProjects || 0 }}</strong></div>
+              <div style="display:flex; justify-content:space-between;"><span>Overdue milestones</span><strong>{{ dashboardStats?.overdueMilestones || 0 }}</strong></div>
+              <div style="display:flex; justify-content:space-between;"><span>Past meetings</span><strong>{{ dashboardStats?.pastMeetings || 0 }}</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ps-page-card" style="padding: 1rem; border: 1px solid var(--surface-100); box-shadow:none;">
+          <div class="stat-label" style="margin-bottom:.5rem">Status breakdown</div>
+          <div class="activity-list" style="gap:.65rem">
+            <div *ngFor="let item of projectStatusBreakdown" style="display:flex; justify-content:space-between; align-items:center; gap:1rem;">
+              <span>{{ item.label }}</span>
+              <strong>{{ item.value }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </ng-template>
+  </ng-container>
+
+  <ng-template #loadingState>
+    <div class="ps-page-header">
+      <div class="header-title">
+        <h2>Loading dashboard…</h2>
+        <p>Preparing project analytics and charts.</p>
+      </div>
+    </div>
+
+    <div class="ps-grid cols-4" style="margin-bottom: 1.5rem">
+      <p-skeleton *ngFor="let _ of [1,2,3,4]" height="110px"></p-skeleton>
+    </div>
+
+    <div class="charts-row">
+      <p-skeleton height="300px"></p-skeleton>
+      <p-skeleton height="300px"></p-skeleton>
+    </div>
+  </ng-template>
+</div>

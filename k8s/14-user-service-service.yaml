@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+  namespace: plansync
+spec:
+  selector:
+    app: user-service
+  ports:
+    - port: 8079
+      targetPort: 8079
+  type: ClusterIP

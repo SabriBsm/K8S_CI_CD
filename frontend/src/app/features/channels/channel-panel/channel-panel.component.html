@@ -1,0 +1,61 @@
+<div class="ch-panel">
+  <!-- Header -->
+  <div class="ch-header">
+    <i class="pi pi-comments ch-icon"></i>
+    <span class="ch-name">{{ channel?.name || 'Channel' }}</span>
+    <span class="ch-badge" *ngIf="isArchived">Archivé</span>
+  </div>
+
+  <!-- Loading -->
+  <div class="ch-loading" *ngIf="loading">
+    <i class="pi pi-spin pi-spinner"></i> Chargement…
+  </div>
+
+  <!-- Error -->
+  <div class="ch-error" *ngIf="error && !loading">
+    <i class="pi pi-exclamation-triangle"></i> {{ error }}
+  </div>
+
+  <!-- Messages -->
+  <div class="ch-messages" #msgContainer *ngIf="!loading && !error">
+    <div *ngIf="messages.length === 0" class="ch-empty">
+      <i class="pi pi-inbox"></i>
+      <p>Aucun message. Commencez la conversation !</p>
+    </div>
+
+    <div *ngFor="let msg of messages"
+         class="ch-msg"
+         [class.ch-msg--own]="isOwn(msg)"
+         [class.ch-msg--other]="!isOwn(msg)">
+      <div class="ch-avatar" [class.ch-avatar--own]="isOwn(msg)">
+        {{ initials(msg.senderUsername) }}
+      </div>
+      <div class="ch-bubble">
+        <div class="ch-meta">
+          <span class="ch-sender">{{ msg.senderUsername }}</span>
+          <span class="ch-time">{{ msg.sentAt | date:'HH:mm' }}</span>
+        </div>
+        <div class="ch-content">{{ msg.content }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="ch-input-bar" *ngIf="!loading && !error">
+    <textarea
+      class="ch-input"
+      [(ngModel)]="inputText"
+      (keydown)="onKeydown($event)"
+      placeholder="{{ isArchived ? 'Channel archivé — lecture seule' : 'Écrire un message… (Entrée pour envoyer)' }}"
+      rows="1"
+      [disabled]="isArchived">
+    </textarea>
+    <button
+      class="ch-send-btn"
+      (click)="sendMessage()"
+      [disabled]="!inputText.trim() || isArchived"
+      pTooltip="Envoyer">
+      <i class="pi pi-send"></i>
+    </button>
+  </div>
+</div>
