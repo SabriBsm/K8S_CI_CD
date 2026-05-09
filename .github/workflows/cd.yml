@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - deploy/kubernetes
     paths:
       - "backend/**"
       - "frontend/**"
@@ -70,7 +71,7 @@ jobs:
   deploy:
     name: Deploy to Kubernetes
     needs: build-and-push
-    runs-on: self-hosted
+    runs-on: [self-hosted, linux, x64, plansync-k8s]
     env:
       NAMESPACE: plansync
       TAG: ${{ github.event.inputs.image_tag || github.sha }}
