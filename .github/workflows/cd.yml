@@ -119,6 +119,15 @@ jobs:
           kubectl apply -f k8s/31-grafana-pvc.yaml
           kubectl apply -f k8s/32-grafana-deployment.yaml
           kubectl apply -f k8s/33-grafana-service.yaml
+          kubectl apply -f k8s/34-kube-state-metrics.yaml
+          kubectl apply -f k8s/35-node-exporter.yaml
+
+      - name: Rollout monitoring stack
+        run: |
+          kubectl rollout status deploy/kube-state-metrics -n monitoring --timeout=300s
+          kubectl rollout status ds/node-exporter -n monitoring --timeout=300s
+          kubectl rollout restart deploy/prometheus -n monitoring
+          kubectl rollout status deploy/prometheus -n monitoring --timeout=300s
 
       - name: Flannel + DNS preflight
         shell: bash

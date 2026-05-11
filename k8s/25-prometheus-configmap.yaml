@@ -23,3 +23,14 @@ data:
               - projet-service.plansync.svc.cluster.local:8082
               - config-server.plansync.svc.cluster.local:8888
               - eureka-server.plansync.svc.cluster.local:8761
+
+      - job_name: kube-state-metrics
+        static_configs:
+          - targets: ["kube-state-metrics.monitoring.svc.cluster.local:8080"]
+
+      - job_name: node-exporter
+        dns_sd_configs:
+          - names:
+              - node-exporter.monitoring.svc.cluster.local
+            type: A
+            port: 9100
