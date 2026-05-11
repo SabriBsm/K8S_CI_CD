@@ -109,6 +109,16 @@ jobs:
           kubectl apply -f k8s/21-user-service-hpa.yaml
           kubectl apply -f k8s/22-projet-service-hpa.yaml
           kubectl apply -f k8s/23-ingress.yaml
+          kubectl apply -f k8s/24-monitoring-namespace.yaml
+          kubectl apply -f k8s/25-prometheus-configmap.yaml
+          kubectl apply -f k8s/26-prometheus-pvc.yaml
+          kubectl apply -f k8s/27-prometheus-deployment.yaml
+          kubectl apply -f k8s/28-prometheus-service.yaml
+          kubectl apply -f k8s/29-grafana-secret.yaml
+          kubectl apply -f k8s/30-grafana-datasource-configmap.yaml
+          kubectl apply -f k8s/31-grafana-pvc.yaml
+          kubectl apply -f k8s/32-grafana-deployment.yaml
+          kubectl apply -f k8s/33-grafana-service.yaml
 
       - name: Flannel + DNS preflight
         shell: bash
