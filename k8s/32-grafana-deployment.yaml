@@ -62,6 +62,12 @@ spec:
             - name: datasources
               mountPath: /etc/grafana/provisioning/datasources
               readOnly: true
+            - name: dashboards-provider
+              mountPath: /etc/grafana/provisioning/dashboards
+              readOnly: true
+            - name: dashboards-plansync
+              mountPath: /var/lib/grafana/dashboards/plansync
+              readOnly: true
       volumes:
         - name: data
           persistentVolumeClaim:
@@ -69,3 +75,9 @@ spec:
         - name: datasources
           configMap:
             name: grafana-datasources
+        - name: dashboards-provider
+          configMap:
+            name: grafana-dashboard-provider
+        - name: dashboards-plansync
+          configMap:
+            name: grafana-dashboard-plansync

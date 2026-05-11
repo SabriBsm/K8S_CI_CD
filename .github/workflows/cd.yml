@@ -116,6 +116,8 @@ jobs:
           kubectl apply -f k8s/28-prometheus-service.yaml
           kubectl apply -f k8s/29-grafana-secret.yaml
           kubectl apply -f k8s/30-grafana-datasource-configmap.yaml
+          kubectl apply -f k8s/36-grafana-dashboard-provider-configmap.yaml
+          kubectl apply -f k8s/37-grafana-dashboard-plansync-configmap.yaml
           kubectl apply -f k8s/31-grafana-pvc.yaml
           kubectl apply -f k8s/32-grafana-deployment.yaml
           kubectl apply -f k8s/33-grafana-service.yaml
@@ -126,6 +128,8 @@ jobs:
         run: |
           kubectl rollout status deploy/kube-state-metrics -n monitoring --timeout=300s
           kubectl rollout status ds/node-exporter -n monitoring --timeout=300s
+          kubectl rollout restart deploy/grafana -n monitoring
+          kubectl rollout status deploy/grafana -n monitoring --timeout=300s
           kubectl rollout restart deploy/prometheus -n monitoring
           kubectl rollout status deploy/prometheus -n monitoring --timeout=300s
 
