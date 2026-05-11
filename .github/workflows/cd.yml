@@ -71,6 +71,7 @@ jobs:
     name: Deploy to Kubernetes
     needs: build-and-push
     runs-on: [self-hosted, linux, x64, plansync-k8s]
+    timeout-minutes: 90
     env:
       NAMESPACE: plansync
       TAG: ${{ github.event.inputs.image_tag || github.sha }}
@@ -81,6 +82,23 @@ jobs:
 
       - name: Verify cluster access
         run: kubectl get nodes
+
+      - name: Configure Docker Hub pull secret
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          kubectl -n "$NAMESPACE" create secret docker-registry dockerhub-regcred \
+            --docker-server=https://index.docker.io/v1/ \
+            --docker-username="${DOCKERHUB_USERNAME}" \
+            --docker-password="${DOCKERHUB_TOKEN}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          kubectl patch serviceaccount default -n "$NAMESPACE" \
+            --type='merge' \
+            -p '{"imagePullSecrets":[{"name":"dockerhub-regcred"}]}'
+        env:
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Apply manifests
         run: |
@@ -217,6 +235,7 @@ jobs:
 
       - name: Verify final rollouts
         shell: bash
+        timeout-minutes: 35
         run: |
           set -euo pipefail
 
