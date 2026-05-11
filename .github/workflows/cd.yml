@@ -223,7 +223,7 @@ jobs:
           wait_rollout() {
             local dep="$1"
             echo "=== Rollout: $dep ==="
-            if ! kubectl rollout status "deploy/$dep" -n "$NAMESPACE" --timeout=600s; then
+            if ! kubectl rollout status "deploy/$dep" -n "$NAMESPACE" --timeout=900s; then
               echo "Rollout timeout for $dep. Collecting diagnostics..."
               kubectl get deploy "$dep" -n "$NAMESPACE" -o wide || true
               kubectl get rs -n "$NAMESPACE" -l app="$dep" || true
@@ -231,7 +231,7 @@ jobs:
 
               # Auto-clean old pods stuck in Terminating, then re-check rollout quickly.
               kubectl get pods -n "$NAMESPACE" -l app="$dep" | awk '/Terminating/{print $1}' | xargs -r kubectl delete pod -n "$NAMESPACE" --grace-period=0 --force || true
-              kubectl rollout status "deploy/$dep" -n "$NAMESPACE" --timeout=180s
+              kubectl rollout status "deploy/$dep" -n "$NAMESPACE" --timeout=300s
             fi
           }
 
