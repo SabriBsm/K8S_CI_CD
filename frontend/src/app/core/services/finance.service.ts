@@ -45,7 +45,9 @@ export class FinanceService {
     ?? (environment as { apiSpring?: string }).apiSpring
     ?? environment.apiUrl;
   private readonly projectApiUrl = (environment as { projectApiUrl?: string }).projectApiUrl;
-  private notificationsEndpointUnavailable = false;
+  private readonly financeNotificationsEnabled =
+    (environment as { financeNotificationsEnabled?: boolean }).financeNotificationsEnabled ?? false;
+  private notificationsEndpointUnavailable = !this.financeNotificationsEnabled;
 
   constructor(private http: HttpClient) {}
 

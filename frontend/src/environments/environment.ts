@@ -10,6 +10,7 @@ export const environment = {
   crisisChecklistFormUrl: 'http://192.168.1.171:30080/checklist',
   appPublicUrl: 'http://192.168.1.171:30080',
   apiAI: 'http://192.168.1.171:30080',
+  financeNotificationsEnabled: false,
   appName: 'PlanSync Pro',
   version: '1.0.0',
   jwtTokenKey: 'plansync_access_token',
