@@ -223,15 +223,27 @@ jobs:
           wait_rollout() {
             local dep="$1"
             echo "=== Rollout: $dep ==="
-            if ! kubectl rollout status "deploy/$dep" -n "$NAMESPACE" --timeout=900s; then
+            if ! kubectl rollout status "deploy/$dep" -n "$NAMESPACE" --timeout=1200s; then
               echo "Rollout timeout for $dep. Collecting diagnostics..."
               kubectl get deploy "$dep" -n "$NAMESPACE" -o wide || true
               kubectl get rs -n "$NAMESPACE" -l app="$dep" || true
               kubectl get pods -n "$NAMESPACE" -l app="$dep" -o wide || true
 
+              for pod in $(kubectl get pods -n "$NAMESPACE" -l app="$dep" --no-headers | awk '$2 !~ /^1\/1$/ {print $1}'); do
+                echo "--- describe pod/$pod ---"
+                kubectl describe pod "$pod" -n "$NAMESPACE" || true
+                cname="$(kubectl get pod "$pod" -n "$NAMESPACE" -o jsonpath='{.spec.containers[0].name}' 2>/dev/null || true)"
+                if [ -n "${cname}" ]; then
+                  echo "--- logs pod/$pod (container: $cname) ---"
+                  kubectl logs "$pod" -n "$NAMESPACE" -c "$cname" --tail=200 || true
+                  echo "--- previous logs pod/$pod (container: $cname) ---"
+                  kubectl logs "$pod" -n "$NAMESPACE" -c "$cname" --previous --tail=200 || true
+                fi
+              done
+
               # Auto-clean old pods stuck in Terminating, then re-check rollout quickly.
               kubectl get pods -n "$NAMESPACE" -l app="$dep" | awk '/Terminating/{print $1}' | xargs -r kubectl delete pod -n "$NAMESPACE" --grace-period=0 --force || true
-              kubectl rollout status "deploy/$dep" -n "$NAMESPACE" --timeout=300s
+              kubectl rollout status "deploy/$dep" -n "$NAMESPACE" --timeout=600s
             fi
           }
 

@@ -4,6 +4,7 @@ metadata:
   name: projet-service
   namespace: plansync
 spec:
+  progressDeadlineSeconds: 1200
   replicas: 2
   selector:
     matchLabels:

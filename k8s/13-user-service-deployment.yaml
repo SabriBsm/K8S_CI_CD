@@ -5,6 +5,7 @@ metadata:
   namespace: plansync
 spec:
   revisionHistoryLimit: 3
+  progressDeadlineSeconds: 1200
   replicas: 2
   strategy:
     type: RollingUpdate
