@@ -94,7 +94,11 @@ export class RiskService {
   }
 
   getRisksByProjectId(projectId: number): Observable<Risk[]> {
-    return this.http.get<Risk[]>(`${this.apiUrl}/by-project/${projectId}`);
+    return this.http.get<Risk[]>(`${this.apiUrl}/by-project/${projectId}`).pipe(
+      catchError((error) => (error?.status === 404 || error?.status === 503)
+        ? of([])
+        : throwError(() => error))
+    );
   }
 
   getAllMitigations(): Observable<MitigationPlan[]> {

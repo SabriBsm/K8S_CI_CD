@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpContext } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import {
   AppNotification,
@@ -197,6 +197,9 @@ export class FinanceService {
     return this.http.get<ApiCollection<unknown>>(`${this.apiUrl}/notifications`, {
       context: new HttpContext().set(SKIP_GLOBAL_ERROR_TOAST, true)
     }).pipe(
+      catchError((error) => (error?.status === 404 || error?.status === 503)
+        ? of([])
+        : throwError(() => error)),
       map((response) => this.extractCollection(response).map((item) => this.mapNotification(item)))
     );
   }

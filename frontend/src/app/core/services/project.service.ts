@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
 export interface Project {
@@ -384,15 +385,27 @@ export class ProjectService {
   // ============================================
 
   getProjectNotifications(projectId: number): Observable<any[]> {
-    return this.http.get<any[]>(`${environment.projectApiUrl}/project-notifications/project/${projectId}`);
+    return this.http.get<any[]>(`${environment.projectApiUrl}/project-notifications/project/${projectId}`).pipe(
+      catchError((error) => (error?.status === 404 || error?.status === 503)
+        ? of([])
+        : throwError(() => error))
+    );
   }
 
   getUnreadNotificationsByUser(userId: number | string): Observable<ProjectNotification[]> {
-    return this.http.get<ProjectNotification[]>(`${environment.projectApiUrl}/project-notifications/user/${userId}/unread`);
+    return this.http.get<ProjectNotification[]>(`${environment.projectApiUrl}/project-notifications/user/${userId}/unread`).pipe(
+      catchError((error) => (error?.status === 404 || error?.status === 503)
+        ? of([])
+        : throwError(() => error))
+    );
   }
 
   getNotificationsByUser(userId: number | string): Observable<ProjectNotification[]> {
-    return this.http.get<ProjectNotification[]>(`${environment.projectApiUrl}/project-notifications/user/${userId}`);
+    return this.http.get<ProjectNotification[]>(`${environment.projectApiUrl}/project-notifications/user/${userId}`).pipe(
+      catchError((error) => (error?.status === 404 || error?.status === 503)
+        ? of([])
+        : throwError(() => error))
+    );
   }
 
   markNotificationAsRead(notificationId: number): Observable<void> {

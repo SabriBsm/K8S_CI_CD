@@ -1258,14 +1258,14 @@
             </div>
 
             <div class="form-group">
-              <label for="editDocumentPdf">Upload PDF</label>
-              <input id="editDocumentPdf" type="file" accept="application/pdf,.pdf"
-                     (change)="onDocumentPdfSelected($event)" class="w-full" />
+              <label for="editDocumentPdf">Upload File (PDF/Image)</label>
+              <input id="editDocumentPdf" type="file" accept="application/pdf,image/*,.pdf,.png,.jpg,.jpeg,.webp,.gif"
+                     (change)="onDocumentFileSelected($event)" class="w-full" />
             </div>
           </div>
 
           <small class="text-secondary" *ngIf="selectedDocumentFileName" style="display:block; margin-top:0.4rem;">
-            Selected PDF: {{ selectedDocumentFileName }}
+            Selected file: {{ selectedDocumentFileName }}
           </small>
 
           <div class="form-group">
@@ -1277,7 +1277,7 @@
           <div class="document-form-actions">
             <button pButton type="button" [label]="editingDocumentId ? 'Update Document' : 'Add Document'"
                     icon="pi pi-save" class="p-button-success" (click)="saveDocument()"></button>
-            <button *ngIf="selectedDocumentFileName" pButton type="button" label="Clear PDF"
+            <button *ngIf="selectedDocumentFileName" pButton type="button" label="Clear File"
                     icon="pi pi-times-circle" class="p-button-text p-button-secondary"
                     (click)="clearDocumentFileSelection()"></button>
             <button *ngIf="editingDocumentId" pButton type="button" label="Cancel Edit"
@@ -2094,13 +2094,13 @@
               <input pInputText [(ngModel)]="documentForm.fileUrl" placeholder="https://drive.google.com/..." />
             </div>
             <div class="col-12 md:col-6 field">
-              <label class="font-bold">Upload PDF</label>
-              <input type="file" accept="application/pdf,.pdf"
-                     (change)="onDocumentPdfSelected($event)" class="w-full" />
+              <label class="font-bold">Upload File (PDF/Image)</label>
+              <input type="file" accept="application/pdf,image/*,.pdf,.png,.jpg,.jpeg,.webp,.gif"
+                     (change)="onDocumentFileSelected($event)" class="w-full" />
             </div>
           </div>
           <small class="text-secondary" *ngIf="selectedDocumentFileName" style="display:block; margin-top:0.5rem;">
-            Selected PDF: {{ selectedDocumentFileName }}
+            Selected file: {{ selectedDocumentFileName }}
           </small>
           <div class="flex gap-2 mt-2 flex-wrap">
             <button pButton type="button" icon="pi pi-plus"
@@ -2110,7 +2110,7 @@
                     label="Cancel Edit" class="p-button-text p-button-secondary mt-2"
                     (click)="cancelPendingDocumentEdit()"></button>
             <button *ngIf="selectedDocumentFileName" pButton type="button" icon="pi pi-times-circle"
-                    label="Clear PDF" class="p-button-text p-button-secondary mt-2"
+                    label="Clear File" class="p-button-text p-button-secondary mt-2"
                     (click)="clearDocumentFileSelection()"></button>
           </div>
         </div>

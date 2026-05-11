@@ -205,9 +205,13 @@ public class ProjectServiceImpl implements ProjectService {
         synchronizeCustomerAssociation(existingProject, previousCustomerId, customerUserId);
 
         // Update business logic
-        if (existingProject.getProgress() >= 100.0) {
+        if (existingProject.getProgress() >= 100.0 || existingProject.getStatus() == ProjectStatus.COMPLETED) {
             existingProject.setStatus(ProjectStatus.COMPLETED);
-            existingProject.setActualEndDate(LocalDate.now());
+            if (request.getActualEndDate() != null) {
+                existingProject.setActualEndDate(request.getActualEndDate());
+            } else if (existingProject.getActualEndDate() == null) {
+                existingProject.setActualEndDate(LocalDate.now());
+            }
         }
         existingProject.setUpdatedAt(LocalDateTime.now());
 

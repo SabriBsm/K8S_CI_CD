@@ -2302,23 +2302,35 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     this.resetDocumentForm();
   }
 
-  onDocumentPdfSelected(event: Event): void {
+  onDocumentFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files && input.files.length > 0 ? input.files[0] : null;
     if (!file) {
       return;
     }
 
-    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-    if (!isPdf) {
-      this.messageService.add({ severity: 'error', summary: 'Validation Error', detail: 'Only PDF files are allowed' });
+    const normalizedFileName = file.name.toLowerCase();
+    const isPdf = file.type === 'application/pdf' || normalizedFileName.endsWith('.pdf');
+    const isImage = file.type.startsWith('image/')
+      || normalizedFileName.endsWith('.png')
+      || normalizedFileName.endsWith('.jpg')
+      || normalizedFileName.endsWith('.jpeg')
+      || normalizedFileName.endsWith('.webp')
+      || normalizedFileName.endsWith('.gif');
+
+    if (!isPdf && !isImage) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Validation Error',
+        detail: 'Only PDF or image files are allowed (PNG/JPG/JPEG/WEBP/GIF)'
+      });
       this.clearDocumentFileSelection(input);
       return;
     }
 
     const maxSizeMb = 10;
     if (file.size > maxSizeMb * 1024 * 1024) {
-      this.messageService.add({ severity: 'error', summary: 'Validation Error', detail: `PDF file size must be <= ${maxSizeMb} MB` });
+      this.messageService.add({ severity: 'error', summary: 'Validation Error', detail: `File size must be <= ${maxSizeMb} MB` });
       this.clearDocumentFileSelection(input);
       return;
     }
@@ -2334,13 +2346,13 @@ export class ProjectListComponent implements OnInit, OnDestroy {
 
       this.documentForm.fileUrl = result;
       if (!this.documentForm.name?.trim()) {
-        this.documentForm.name = file.name.replace(/\.pdf$/i, '');
+        this.documentForm.name = file.name.replace(/\.[^.]+$/, '');
       }
       this.selectedDocumentFileName = file.name;
     };
 
     reader.onerror = () => {
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Unable to load PDF file' });
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Unable to load selected file' });
       this.clearDocumentFileSelection(input);
     };
 
@@ -2348,7 +2360,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   }
 
   clearDocumentFileSelection(input?: HTMLInputElement): void {
-    if (this.documentForm.fileUrl && this.documentForm.fileUrl.startsWith('data:application/pdf')) {
+    if (this.documentForm.fileUrl && this.documentForm.fileUrl.startsWith('data:')) {
       this.documentForm.fileUrl = '';
     }
     this.selectedDocumentFileName = '';
@@ -2364,11 +2376,11 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       return;
     }
     // Inline base64 payloads can trigger backend 500 errors (DB/packet limits).
-    if (fileSource.startsWith('data:application/pdf') && fileSource.length > 3_000_000) {
+    if (fileSource.startsWith('data:') && fileSource.length > 3_000_000) {
       this.messageService.add({
         severity: 'error',
         summary: 'Validation Error',
-        detail: 'PDF is too large for inline upload. Use a smaller file or provide an external file URL.'
+        detail: 'File is too large for inline upload. Use a smaller file or provide an external file URL.'
       });
       return;
     }
@@ -2945,12 +2957,22 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   }
 
   downloadDocument(url: string, filename: string): void {
-    const safeFilename = filename?.includes('.') ? filename : `${filename}.pdf`;
+    const safeFilename = filename?.includes('.') ? filename : `${filename}${this.inferDocumentExtension(url)}`;
     const link = document.createElement('a');
     link.href = url;
     link.download = safeFilename;
     link.target = '_blank';
     link.click();
+  }
+
+  private inferDocumentExtension(url: string): string {
+    const normalized = (url || '').trim().toLowerCase();
+    if (normalized.startsWith('data:application/pdf')) return '.pdf';
+    if (normalized.startsWith('data:image/png')) return '.png';
+    if (normalized.startsWith('data:image/jpeg')) return '.jpg';
+    if (normalized.startsWith('data:image/webp')) return '.webp';
+    if (normalized.startsWith('data:image/gif')) return '.gif';
+    return '';
   }
 
   resetPendingMilestoneForm(): void {

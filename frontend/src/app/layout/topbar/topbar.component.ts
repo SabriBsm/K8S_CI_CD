@@ -106,13 +106,17 @@ export class TopbarComponent implements OnInit, OnDestroy {
     forkJoin({
       project: this.projectService.getUnreadNotificationsByUser(userId).pipe(
         catchError((err) => {
-          console.error('Error loading project unread notifications', err);
+          if (!this.isOptionalEndpointUnavailable(err)) {
+            console.error('Error loading project unread notifications', err);
+          }
           return of([] as ProjectNotification[]);
         })
       ),
       finance: this.financeService.getNotifications().pipe(
         catchError((err) => {
-          console.error('Error loading finance unread notifications', err);
+          if (!this.isOptionalEndpointUnavailable(err)) {
+            console.error('Error loading finance unread notifications', err);
+          }
           return of([] as AppNotification[]);
         })
       )
@@ -242,5 +246,10 @@ export class TopbarComponent implements OnInit, OnDestroy {
           }
         : undefined
     };
+  }
+
+  private isOptionalEndpointUnavailable(error: any): boolean {
+    const status = Number(error?.status);
+    return status === 404 || status === 503;
   }
 }
