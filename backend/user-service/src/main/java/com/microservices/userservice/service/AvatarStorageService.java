@@ -62,18 +62,42 @@ public class AvatarStorageService {
     }
 
     private String buildPublicUrl(String fileName) {
-        String basePath = publicPath == null || publicPath.isBlank() ? "/avatars/" : publicPath;
-        if (!basePath.endsWith("/")) {
-            basePath = basePath + "/";
-        }
+        String normalizedPublicPath = normalizePublicPath(publicPath);
+        String normalizedBaseUrl = normalizeBaseUrl(publicBaseUrl, normalizedPublicPath);
+        return normalizedBaseUrl + normalizedPublicPath + fileName;
+    }
 
-        String baseUrl = publicBaseUrl == null || publicBaseUrl.isBlank()
+    private String normalizePublicPath(String configuredPath) {
+        String path = configuredPath == null || configuredPath.isBlank() ? "/avatars/" : configuredPath.trim();
+        if (!path.startsWith("/")) {
+            path = "/" + path;
+        }
+        if (!path.endsWith("/")) {
+            path = path + "/";
+        }
+        return path.replaceAll("/{2,}", "/");
+    }
+
+    private String normalizeBaseUrl(String configuredBaseUrl, String normalizedPublicPath) {
+        String baseUrl = configuredBaseUrl == null || configuredBaseUrl.isBlank()
                 ? "http://localhost:8079"
-                : publicBaseUrl;
-        if (baseUrl.endsWith("/")) {
+                : configuredBaseUrl.trim();
+
+        while (baseUrl.endsWith("/")) {
             baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
         }
-        return baseUrl + basePath + fileName;
+
+        String pathWithoutTrailingSlash = normalizedPublicPath.endsWith("/")
+                ? normalizedPublicPath.substring(0, normalizedPublicPath.length() - 1)
+                : normalizedPublicPath;
+        if (!pathWithoutTrailingSlash.isBlank() && baseUrl.endsWith(pathWithoutTrailingSlash)) {
+            baseUrl = baseUrl.substring(0, baseUrl.length() - pathWithoutTrailingSlash.length());
+            while (baseUrl.endsWith("/")) {
+                baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+            }
+        }
+
+        return baseUrl;
     }
 
     private String buildStoredFileName(String originalFilename, String mimeType) {

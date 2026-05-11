@@ -73,7 +73,7 @@ data:
     app.jwt.refresh-token-ttl=P30D
     app.avatar.local-dir=/app/uploads/avatars
     app.avatar.public-path=/avatars/
-    app.avatar.public-base-url=${APP_AVATAR_PUBLIC_BASE_URL:http://192.168.1.171:30080/avatars}
+    app.avatar.public-base-url=${APP_AVATAR_PUBLIC_BASE_URL:http://192.168.1.171:30080}
     spring.mail.host=smtp.gmail.com
     spring.mail.port=587
     spring.mail.username=sabriboussami@gmail.com

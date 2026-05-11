@@ -45,6 +45,7 @@ export class FinanceService {
     ?? (environment as { apiSpring?: string }).apiSpring
     ?? environment.apiUrl;
   private readonly projectApiUrl = (environment as { projectApiUrl?: string }).projectApiUrl;
+  private notificationsEndpointUnavailable = false;
 
   constructor(private http: HttpClient) {}
 
@@ -194,24 +195,55 @@ export class FinanceService {
   }
 
   getNotifications(): Observable<AppNotification[]> {
+    if (this.notificationsEndpointUnavailable) {
+      return of([]);
+    }
+
     return this.http.get<ApiCollection<unknown>>(`${this.apiUrl}/notifications`, {
       context: new HttpContext().set(SKIP_GLOBAL_ERROR_TOAST, true)
     }).pipe(
-      catchError((error) => (error?.status === 404 || error?.status === 503)
-        ? of([])
-        : throwError(() => error)),
+      catchError((error) => {
+        if (error?.status === 404 || error?.status === 503) {
+          this.notificationsEndpointUnavailable = true;
+          return of([]);
+        }
+        return throwError(() => error);
+      }),
       map((response) => this.extractCollection(response).map((item) => this.mapNotification(item)))
     );
   }
 
   markNotificationAsRead(notificationId: number): Observable<AppNotification> {
+    if (this.notificationsEndpointUnavailable) {
+      return of(this.buildPlaceholderNotification(notificationId));
+    }
+
     return this.http.put<ApiEntity<unknown>>(`${this.apiUrl}/notifications/${notificationId}/read`, {}).pipe(
+      catchError((error) => {
+        if (error?.status === 404 || error?.status === 503) {
+          this.notificationsEndpointUnavailable = true;
+          return of(this.buildPlaceholderNotification(notificationId));
+        }
+        return throwError(() => error);
+      }),
       map((response) => this.mapNotification(this.extractEntity(response)))
     );
   }
 
   markAllNotificationsAsRead(): Observable<void> {
-    return this.http.put<void>(`${this.apiUrl}/notifications/read-all`, {});
+    if (this.notificationsEndpointUnavailable) {
+      return of(void 0);
+    }
+
+    return this.http.put<void>(`${this.apiUrl}/notifications/read-all`, {}).pipe(
+      catchError((error) => {
+        if (error?.status === 404 || error?.status === 503) {
+          this.notificationsEndpointUnavailable = true;
+          return of(void 0);
+        }
+        return throwError(() => error);
+      })
+    );
   }
 
   getDashboard(): Observable<FinanceDashboardResponse> {
@@ -505,5 +537,18 @@ export class FinanceService {
     return value
       .map((entry) => this.asString(entry).trim())
       .filter((entry) => entry.length > 0);
+  }
+
+  private buildPlaceholderNotification(id: number): AppNotification {
+    return {
+      id,
+      title: '',
+      message: '',
+      type: 'REPORT_GENERATED',
+      read: true,
+      createdAt: new Date().toISOString(),
+      projectId: null,
+      projectName: null
+    };
   }
 }
