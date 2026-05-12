@@ -170,11 +170,40 @@ jobs:
           kubectl apply -f k8s/38-prometheus-rbac.yaml
           kubectl apply -f k8s/39-ticket-service-deployment.yaml
           kubectl apply -f k8s/40-ticket-service-service.yaml
+          kubectl apply -f k8s/41-alertmanager-configmap.yaml
+          kubectl apply -f k8s/42-alertmanager-deployment.yaml
+          kubectl apply -f k8s/43-alertmanager-service.yaml
+
+      - name: Configure Alertmanager Gmail secret
+        shell: bash
+        env:
+          ALERTMANAGER_GMAIL_APP_PASSWORD: ${{ secrets.ALERTMANAGER_GMAIL_APP_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          SMTP_PASSWORD="${ALERTMANAGER_GMAIL_APP_PASSWORD:-}"
+          if [ -z "${SMTP_PASSWORD}" ]; then
+            echo "ALERTMANAGER_GMAIL_APP_PASSWORD not set, fallback to plansync-secrets.smtp-password"
+            SMTP_PASSWORD="$(kubectl get secret plansync-secrets -n plansync -o jsonpath='{.data.smtp-password}' | base64 -d)"
+          fi
+
+          if [ -z "${SMTP_PASSWORD}" ]; then
+            echo "No SMTP password available for Alertmanager."
+            exit 1
+          fi
+
+          kubectl -n monitoring create secret generic alertmanager-gmail \
+            --from-literal=SMTP_AUTH_USERNAME='sabriboussami@gmail.com' \
+            --from-literal=SMTP_AUTH_PASSWORD="${SMTP_PASSWORD}" \
+            --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Rollout monitoring stack
         run: |
+          kubectl rollout status deploy/alertmanager -n monitoring --timeout=300s
           kubectl rollout status deploy/kube-state-metrics -n monitoring --timeout=300s
           kubectl rollout status ds/node-exporter -n monitoring --timeout=300s
+          kubectl rollout restart deploy/alertmanager -n monitoring
+          kubectl rollout status deploy/alertmanager -n monitoring --timeout=300s
           kubectl rollout restart deploy/grafana -n monitoring
           kubectl rollout status deploy/grafana -n monitoring --timeout=300s
           kubectl rollout restart deploy/prometheus -n monitoring
