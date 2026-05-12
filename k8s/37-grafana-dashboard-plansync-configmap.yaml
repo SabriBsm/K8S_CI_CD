@@ -397,7 +397,7 @@ data:
       "tags": ["k8s", "cluster"],
       "timezone": "Africa/Casablanca",
       "schemaVersion": 42,
-      "version": 2,
+      "version": 3,
       "editable": true,
       "refresh": "10s",
       "time": {
@@ -443,8 +443,8 @@ data:
           "targets": [
             {
               "refId": "A",
-              "expr": "100 * (1 - avg by(instance) (rate(node_cpu_seconds_total{job=\"node-exporter\",mode=\"idle\"}[5m]))) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\"}",
-              "legendFormat": "{{nodename}}"
+              "expr": "100 * (1 - avg by(node) (rate(node_cpu_seconds_total{job=\"node-exporter\",mode=\"idle\"}[5m])))",
+              "legendFormat": "{{node}}"
             }
           ]
         },
@@ -471,8 +471,8 @@ data:
           "targets": [
             {
               "refId": "A",
-              "expr": "100 * (1 - (node_memory_MemAvailable_bytes{job=\"node-exporter\"} / node_memory_MemTotal_bytes{job=\"node-exporter\"})) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\"}",
-              "legendFormat": "{{nodename}}"
+              "expr": "100 * (1 - (node_memory_MemAvailable_bytes{job=\"node-exporter\"} / node_memory_MemTotal_bytes{job=\"node-exporter\"}))",
+              "legendFormat": "{{node}}"
             }
           ]
         },
@@ -499,8 +499,8 @@ data:
           "targets": [
             {
               "refId": "A",
-              "expr": "100 * (1 - (node_filesystem_avail_bytes{job=\"node-exporter\",mountpoint=\"/\",fstype!~\"tmpfs|overlay\"} / node_filesystem_size_bytes{job=\"node-exporter\",mountpoint=\"/\",fstype!~\"tmpfs|overlay\"})) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\"}",
-              "legendFormat": "{{nodename}}"
+              "expr": "100 * (1 - (node_filesystem_avail_bytes{job=\"node-exporter\",mountpoint=\"/\",fstype!~\"tmpfs|overlay\"} / node_filesystem_size_bytes{job=\"node-exporter\",mountpoint=\"/\",fstype!~\"tmpfs|overlay\"}))",
+              "legendFormat": "{{node}}"
             }
           ]
         },
