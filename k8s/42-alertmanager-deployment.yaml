@@ -27,7 +27,6 @@ spec:
           args:
             - --config.file=/etc/alertmanager/alertmanager.yml
             - --storage.path=/alertmanager
-            - --web.external-url=/alertmanager
             - --web.route-prefix=/
           ports:
             - containerPort: 9093
