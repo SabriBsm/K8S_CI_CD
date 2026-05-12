@@ -241,9 +241,16 @@ jobs:
 
           wait_rollout() {
             local dep="$1"
-            echo "=== Rollout: $dep ==="
-            if ! kubectl rollout status "deploy/$dep" -n "$NAMESPACE" --timeout=1200s; then
-              echo "Rollout timeout for $dep. Collecting diagnostics..."
+            local max_attempts=3
+            local attempt=1
+
+            while [ "$attempt" -le "$max_attempts" ]; do
+              echo "=== Rollout: $dep (attempt $attempt/$max_attempts) ==="
+              if kubectl rollout status "deploy/$dep" -n "$NAMESPACE" --timeout=900s; then
+                return 0
+              fi
+
+              echo "Rollout attempt $attempt failed for $dep. Collecting diagnostics..."
               kubectl get deploy "$dep" -n "$NAMESPACE" -o wide || true
               kubectl get rs -n "$NAMESPACE" -l app="$dep" || true
               kubectl get pods -n "$NAMESPACE" -l app="$dep" -o wide || true
@@ -260,10 +267,21 @@ jobs:
                 fi
               done
 
-              # Auto-clean old pods stuck in Terminating, then re-check rollout quickly.
+              # Remove pods stuck terminating and image-pull transient failures, then retry.
               kubectl get pods -n "$NAMESPACE" -l app="$dep" | awk '/Terminating/{print $1}' | xargs -r kubectl delete pod -n "$NAMESPACE" --grace-period=0 --force || true
-              kubectl rollout status "deploy/$dep" -n "$NAMESPACE" --timeout=600s
-            fi
+              kubectl get pods -n "$NAMESPACE" -l app="$dep" \
+                -o custom-columns=NAME:.metadata.name,READY:.status.containerStatuses[0].ready,WAIT:.status.containerStatuses[0].state.waiting.reason --no-headers \
+                | awk '$2=="false" && ($3=="ImagePullBackOff" || $3=="ErrImagePull" || $3=="ContainerCreating") {print $1}' \
+                | xargs -r kubectl delete pod -n "$NAMESPACE" --grace-period=0 --force || true
+
+              if [ "$attempt" -lt "$max_attempts" ]; then
+                sleep 20
+              fi
+              attempt=$((attempt + 1))
+            done
+
+            echo "Rollout failed after ${max_attempts} attempts: $dep"
+            return 1
           }
 
           wait_rollout mysql
