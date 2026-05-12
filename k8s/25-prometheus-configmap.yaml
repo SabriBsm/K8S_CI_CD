@@ -30,11 +30,20 @@ data:
 
       - job_name: node-exporter
         kubernetes_sd_configs:
-          - role: node
+          - role: pod
         relabel_configs:
-          - source_labels: [__meta_kubernetes_node_address_InternalIP]
+          - source_labels: [__meta_kubernetes_namespace]
+            regex: monitoring
+            action: keep
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            regex: node-exporter
+            action: keep
+          - source_labels: [__meta_kubernetes_pod_container_port_name]
+            regex: metrics
+            action: keep
+          - source_labels: [__meta_kubernetes_pod_node_name]
+            target_label: node
+          - source_labels: [__meta_kubernetes_pod_host_ip]
             regex: (.+)
-            target_label: __address__
-            replacement: ${1}:9100
-          - source_labels: [__meta_kubernetes_node_name]
-            target_label: nodename
+            replacement: $1:9100
+            target_label: instance

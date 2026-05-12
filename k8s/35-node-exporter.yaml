@@ -26,9 +26,7 @@ spec:
       labels:
         app: node-exporter
     spec:
-      hostNetwork: true
       hostPID: true
-      dnsPolicy: ClusterFirstWithHostNet
       tolerations:
         - operator: Exists
       containers:
