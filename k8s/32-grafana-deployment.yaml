@@ -36,7 +36,7 @@ spec:
                   name: grafana-admin
                   key: admin-password
             - name: GF_SERVER_ROOT_URL
-              value: "%(protocol)s://%(domain)s/grafana/"
+              value: "http://192.168.1.171:30080/grafana/"
             - name: GF_SERVER_SERVE_FROM_SUB_PATH
               value: "true"
           resources:
