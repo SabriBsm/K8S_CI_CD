@@ -24,8 +24,62 @@ permissions:
   contents: read
 
 jobs:
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      app_changed: ${{ steps.detect.outputs.app_changed }}
+      k8s_changed: ${{ steps.detect.outputs.k8s_changed }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect changed paths
+        id: detect
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          app_changed=false
+          k8s_changed=false
+
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            app_changed=true
+            k8s_changed=true
+          else
+            before_sha="${{ github.event.before }}"
+            after_sha="${{ github.sha }}"
+
+            if [ -z "${before_sha}" ] || [ "${before_sha}" = "0000000000000000000000000000000000000000" ]; then
+              if git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
+                changed_files="$(git diff --name-only HEAD~1 HEAD)"
+              else
+                changed_files="$(git ls-files)"
+              fi
+            else
+              changed_files="$(git diff --name-only "${before_sha}" "${after_sha}")"
+            fi
+
+            echo "Changed files:"
+            echo "${changed_files}"
+
+            if echo "${changed_files}" | grep -E '^(backend/|frontend/)' >/dev/null; then
+              app_changed=true
+            fi
+            if echo "${changed_files}" | grep -E '^(k8s/|\.github/workflows/cd\.yml$)' >/dev/null; then
+              k8s_changed=true
+            fi
+          fi
+
+          echo "app_changed=${app_changed}" >> "$GITHUB_OUTPUT"
+          echo "k8s_changed=${k8s_changed}" >> "$GITHUB_OUTPUT"
+
   build-and-push:
     name: Build & Push Images
+    needs: detect-changes
+    if: needs.detect-changes.outputs.app_changed == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -95,7 +149,11 @@ jobs:
 
   deploy:
     name: Deploy to Kubernetes
-    needs: build-and-push
+    needs: [detect-changes, build-and-push]
+    if: |
+      always() &&
+      (needs.detect-changes.outputs.app_changed == 'true' || needs.detect-changes.outputs.k8s_changed == 'true') &&
+      (needs.build-and-push.result == 'success' || needs.build-and-push.result == 'skipped')
     runs-on: [self-hosted, linux, x64, plansync-k8s]
     timeout-minutes: 90
     env:
@@ -342,37 +400,46 @@ jobs:
           done
 
       - name: Rollout eureka-server
+        if: needs.detect-changes.outputs.app_changed == 'true'
         run: |
           kubectl set image deploy/eureka-server -n "$NAMESPACE" eureka-server="$DOCKERHUB_USERNAME/plansync-eureka-server:$TAG"
 
       - name: Rollout config-server
+        if: needs.detect-changes.outputs.app_changed == 'true'
         run: |
           kubectl set image deploy/config-server -n "$NAMESPACE" config-server="$DOCKERHUB_USERNAME/plansync-config-server:$TAG"
 
       - name: Rollout user-service
+        if: needs.detect-changes.outputs.app_changed == 'true'
         run: |
           kubectl set image deploy/user-service -n "$NAMESPACE" user-service="$DOCKERHUB_USERNAME/plansync-user-service:$TAG"
 
       - name: Rollout projet-service
+        if: needs.detect-changes.outputs.app_changed == 'true'
         run: |
           kubectl set image deploy/projet-service -n "$NAMESPACE" projet-service="$DOCKERHUB_USERNAME/plansync-projet-service:$TAG"
 
       - name: Rollout ticket-service
+        if: needs.detect-changes.outputs.app_changed == 'true'
         run: |
           kubectl set image deploy/ticket-service -n "$NAMESPACE" ticket-service="$DOCKERHUB_USERNAME/plansync-ticket-service:$TAG"
 
       - name: Rollout api-gateway
+        if: needs.detect-changes.outputs.app_changed == 'true'
         run: |
           kubectl set image deploy/api-gateway -n "$NAMESPACE" api-gateway="$DOCKERHUB_USERNAME/plansync-api-gateway:$TAG"
 
       - name: Rollout frontend
+        if: needs.detect-changes.outputs.app_changed == 'true'
         run: |
           kubectl set image deploy/frontend -n "$NAMESPACE" frontend="$DOCKERHUB_USERNAME/plansync-frontend:$TAG"
 
       - name: Remove old legacy env var
+        if: needs.detect-changes.outputs.app_changed == 'true'
         run: kubectl set env deploy/user-service -n "$NAMESPACE" APP_CORS_ALLOWED_ORIGIN- || true
 
       - name: Verify final rollouts
+        if: needs.detect-changes.outputs.app_changed == 'true'
         shell: bash
         timeout-minutes: 35
         run: |
