@@ -29,8 +29,12 @@ data:
           - targets: ["kube-state-metrics.monitoring.svc.cluster.local:8080"]
 
       - job_name: node-exporter
-        dns_sd_configs:
-          - names:
-              - node-exporter.monitoring.svc.cluster.local
-            type: A
-            port: 9100
+        kubernetes_sd_configs:
+          - role: node
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_node_address_InternalIP]
+            regex: (.+)
+            target_label: __address__
+            replacement: ${1}:9100
+          - source_labels: [__meta_kubernetes_node_name]
+            target_label: nodename

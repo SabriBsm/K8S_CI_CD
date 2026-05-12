@@ -141,6 +141,7 @@ jobs:
           kubectl apply -f k8s/33-grafana-service.yaml
           kubectl apply -f k8s/34-kube-state-metrics.yaml
           kubectl apply -f k8s/35-node-exporter.yaml
+          kubectl apply -f k8s/38-prometheus-rbac.yaml
 
       - name: Rollout monitoring stack
         run: |
