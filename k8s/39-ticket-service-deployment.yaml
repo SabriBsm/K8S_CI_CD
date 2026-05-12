@@ -1,0 +1,107 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ticket-service
+  namespace: plansync
+spec:
+  progressDeadlineSeconds: 1200
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ticket-service
+  template:
+    metadata:
+      labels:
+        app: ticket-service
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - mysql
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: ticket-service
+          image: sabriboussami/plansync-ticket-service:2026-05-12-ticket
+          ports:
+            - containerPort: 8088
+          env:
+            - name: SPRING_CONFIG_IMPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: plansync-app-config
+                  key: SPRING_CONFIG_IMPORT
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              valueFrom:
+                configMapKeyRef:
+                  name: plansync-app-config
+                  key: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: plansync-app-config
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: plansync-app-config
+                  key: DB_PORT
+            - name: DB_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: plansync-app-config
+                  key: DB_USERNAME
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: plansync-secrets
+                  key: db-password
+            - name: USER_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: plansync-app-config
+                  key: USER_SERVICE_URL
+            - name: APP_CORS_ALLOWED_ORIGINS
+              valueFrom:
+                configMapKeyRef:
+                  name: plansync-app-config
+                  key: APP_CORS_ALLOWED_ORIGINS
+            - name: GROQ_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: plansync-secrets
+                  key: groq-api-key
+                  optional: true
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "512Mi"
+            limits:
+              cpu: "500m"
+              memory: "768Mi"
+          startupProbe:
+            tcpSocket:
+              port: 8088
+            initialDelaySeconds: 90
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8088
+            initialDelaySeconds: 180
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8088
+            initialDelaySeconds: 300
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 5

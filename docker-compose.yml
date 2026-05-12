@@ -119,6 +119,32 @@ services:
       APP_FRONTEND_URL: http://localhost:4200
 
   # ── Frontend (Angular → Nginx) ────────────────────────────────────
+  # Ticket Service
+  ticket-service:
+    build: ./backend/ticket-service
+    container_name: plansync-ticket
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+    environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USERNAME: root
+      DB_PASSWORD: rootpassword
+      USER_SERVICE_URL: http://user-service:8079
+      APP_CORS_ALLOWED_ORIGINS: http://localhost:4200
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+
+  # Frontend (Angular -> Nginx)
   frontend:
     build: ./frontend
     container_name: plansync-frontend

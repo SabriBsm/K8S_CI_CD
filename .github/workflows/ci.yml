@@ -28,6 +28,7 @@ jobs:
           - config-server
           - eureka-server
           - projet-service
+          - ticket-service
           - user-service
     defaults:
       run:

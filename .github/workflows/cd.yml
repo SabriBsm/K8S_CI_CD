@@ -39,6 +39,8 @@ jobs:
             context: ./backend/user-service
           - image: plansync-projet-service
             context: ./backend/projet-service
+          - image: plansync-ticket-service
+            context: ./backend/ticket-service
           - image: plansync-api-gateway
             context: ./backend/api-gateway
           - image: plansync-frontend
@@ -142,6 +144,8 @@ jobs:
           kubectl apply -f k8s/34-kube-state-metrics.yaml
           kubectl apply -f k8s/35-node-exporter.yaml
           kubectl apply -f k8s/38-prometheus-rbac.yaml
+          kubectl apply -f k8s/39-ticket-service-deployment.yaml
+          kubectl apply -f k8s/40-ticket-service-service.yaml
 
       - name: Rollout monitoring stack
         run: |
@@ -223,6 +227,10 @@ jobs:
         run: |
           kubectl set image deploy/projet-service -n "$NAMESPACE" projet-service="$DOCKERHUB_USERNAME/plansync-projet-service:$TAG"
 
+      - name: Rollout ticket-service
+        run: |
+          kubectl set image deploy/ticket-service -n "$NAMESPACE" ticket-service="$DOCKERHUB_USERNAME/plansync-ticket-service:$TAG"
+
       - name: Rollout api-gateway
         run: |
           kubectl set image deploy/api-gateway -n "$NAMESPACE" api-gateway="$DOCKERHUB_USERNAME/plansync-api-gateway:$TAG"
@@ -290,6 +298,7 @@ jobs:
           wait_rollout config-server
           wait_rollout user-service
           wait_rollout projet-service
+          wait_rollout ticket-service
           wait_rollout api-gateway
           wait_rollout frontend
 

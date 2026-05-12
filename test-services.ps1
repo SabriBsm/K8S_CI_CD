@@ -7,6 +7,7 @@ $services = @(
     @{ Name = "User Service"; Port = 8079; Url = "http://localhost:8079/swagger-ui.html" },
     @{ Name = "Risk Service"; Port = 8089; Url = "http://localhost:8089/swagger-ui.html" },
     @{ Name = "Projet Service"; Port = 8082; Url = "http://localhost:8082/swagger-ui.html" },
+    @{ Name = "Ticket Service"; Port = 8088; Url = "http://localhost:8088/swagger-ui.html" },
     @{ Name = "API Gateway"; Port = 8080; Url = "http://localhost:8080" },
     @{ Name = "Frontend"; Port = 4200; Url = "http://localhost:4200" }
 )
@@ -39,6 +40,7 @@ Write-Host "Environment Configuration:" -ForegroundColor Yellow
 Write-Host "- User Service (Auth):      http://localhost:8079/api" -ForegroundColor White
 Write-Host "- Risk Service (Risks):     http://localhost:8089/api" -ForegroundColor White
 Write-Host "- Project Service (Projects): http://localhost:8082/api" -ForegroundColor White
+Write-Host "- Ticket Service (Tickets): http://localhost:8088/api" -ForegroundColor White
 Write-Host "- Frontend (UI):            http://localhost:4200" -ForegroundColor White
 Write-Host "- Eureka (Discovery):       http://localhost:8761" -ForegroundColor White
 

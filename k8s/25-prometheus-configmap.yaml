@@ -21,6 +21,7 @@ data:
               - api-gateway.plansync.svc.cluster.local:8085
               - user-service.plansync.svc.cluster.local:8079
               - projet-service.plansync.svc.cluster.local:8082
+              - ticket-service.plansync.svc.cluster.local:8088
               - config-server.plansync.svc.cluster.local:8888
               - eureka-server.plansync.svc.cluster.local:8761
 
