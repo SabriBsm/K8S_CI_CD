@@ -9,9 +9,9 @@ data:
       resolve_timeout: 5m
       smtp_smarthost: smtp.gmail.com:587
       smtp_from: sabriboussami@gmail.com
-      smtp_auth_username: ${SMTP_AUTH_USERNAME}
-      smtp_auth_identity: ${SMTP_AUTH_USERNAME}
-      smtp_auth_password: ${SMTP_AUTH_PASSWORD}
+      smtp_auth_username: sabriboussami@gmail.com
+      smtp_auth_identity: sabriboussami@gmail.com
+      smtp_auth_password_file: /etc/alertmanager/secret/smtp-auth-password
       smtp_require_tls: true
 
     route:

@@ -26,21 +26,9 @@ spec:
           imagePullPolicy: IfNotPresent
           args:
             - --config.file=/etc/alertmanager/alertmanager.yml
-            - --config.expand-env
             - --storage.path=/alertmanager
           ports:
             - containerPort: 9093
-          env:
-            - name: SMTP_AUTH_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: alertmanager-gmail
-                  key: SMTP_AUTH_USERNAME
-            - name: SMTP_AUTH_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: alertmanager-gmail
-                  key: SMTP_AUTH_PASSWORD
           resources:
             requests:
               cpu: "50m"
@@ -66,11 +54,20 @@ spec:
             - name: config
               mountPath: /etc/alertmanager/alertmanager.yml
               subPath: alertmanager.yml
+            - name: smtp-secret
+              mountPath: /etc/alertmanager/secret
+              readOnly: true
             - name: data
               mountPath: /alertmanager
       volumes:
         - name: config
           configMap:
             name: alertmanager-config
+        - name: smtp-secret
+          secret:
+            secretName: alertmanager-gmail
+            items:
+              - key: SMTP_AUTH_PASSWORD
+                path: smtp-auth-password
         - name: data
           emptyDir: {}

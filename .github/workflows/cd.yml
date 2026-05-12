@@ -133,6 +133,8 @@ jobs:
         run: |
           set -euo pipefail
 
+          kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
+
           SMTP_PASSWORD="${ALERTMANAGER_GMAIL_APP_PASSWORD:-}"
           if [ -z "${SMTP_PASSWORD}" ]; then
             echo "ALERTMANAGER_GMAIL_APP_PASSWORD not set, fallback to plansync-secrets.smtp-password"
