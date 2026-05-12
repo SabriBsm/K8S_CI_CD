@@ -126,6 +126,29 @@ jobs:
         env:
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Configure Alertmanager Gmail secret
+        shell: bash
+        env:
+          ALERTMANAGER_GMAIL_APP_PASSWORD: ${{ secrets.ALERTMANAGER_GMAIL_APP_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          SMTP_PASSWORD="${ALERTMANAGER_GMAIL_APP_PASSWORD:-}"
+          if [ -z "${SMTP_PASSWORD}" ]; then
+            echo "ALERTMANAGER_GMAIL_APP_PASSWORD not set, fallback to plansync-secrets.smtp-password"
+            SMTP_PASSWORD="$(kubectl get secret plansync-secrets -n plansync -o jsonpath='{.data.smtp-password}' | base64 -d)"
+          fi
+
+          if [ -z "${SMTP_PASSWORD}" ]; then
+            echo "No SMTP password available for Alertmanager."
+            exit 1
+          fi
+
+          kubectl -n monitoring create secret generic alertmanager-gmail \
+            --from-literal=SMTP_AUTH_USERNAME='sabriboussami@gmail.com' \
+            --from-literal=SMTP_AUTH_PASSWORD="${SMTP_PASSWORD}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
       - name: Apply manifests
         run: |
           kubectl apply -f k8s/00-namespace.yaml
@@ -174,40 +197,91 @@ jobs:
           kubectl apply -f k8s/42-alertmanager-deployment.yaml
           kubectl apply -f k8s/43-alertmanager-service.yaml
 
-      - name: Configure Alertmanager Gmail secret
+      - name: Rollout monitoring stack
         shell: bash
-        env:
-          ALERTMANAGER_GMAIL_APP_PASSWORD: ${{ secrets.ALERTMANAGER_GMAIL_APP_PASSWORD }}
+        timeout-minutes: 25
         run: |
           set -euo pipefail
 
-          SMTP_PASSWORD="${ALERTMANAGER_GMAIL_APP_PASSWORD:-}"
-          if [ -z "${SMTP_PASSWORD}" ]; then
-            echo "ALERTMANAGER_GMAIL_APP_PASSWORD not set, fallback to plansync-secrets.smtp-password"
-            SMTP_PASSWORD="$(kubectl get secret plansync-secrets -n plansync -o jsonpath='{.data.smtp-password}' | base64 -d)"
-          fi
+          wait_monitoring_deploy() {
+            local dep="$1"
+            local max_attempts=3
+            local attempt=1
 
-          if [ -z "${SMTP_PASSWORD}" ]; then
-            echo "No SMTP password available for Alertmanager."
-            exit 1
-          fi
+            while [ "$attempt" -le "$max_attempts" ]; do
+              echo "=== Monitoring rollout: ${dep} (attempt ${attempt}/${max_attempts}) ==="
+              if kubectl rollout status "deploy/${dep}" -n monitoring --timeout=600s; then
+                return 0
+              fi
 
-          kubectl -n monitoring create secret generic alertmanager-gmail \
-            --from-literal=SMTP_AUTH_USERNAME='sabriboussami@gmail.com' \
-            --from-literal=SMTP_AUTH_PASSWORD="${SMTP_PASSWORD}" \
-            --dry-run=client -o yaml | kubectl apply -f -
+              echo "Rollout failed for ${dep}, collecting diagnostics..."
+              kubectl get deploy "${dep}" -n monitoring -o wide || true
+              kubectl get rs -n monitoring -l app="${dep}" || true
+              kubectl get pods -n monitoring -l app="${dep}" -o wide || true
 
-      - name: Rollout monitoring stack
-        run: |
-          kubectl rollout status deploy/alertmanager -n monitoring --timeout=300s
-          kubectl rollout status deploy/kube-state-metrics -n monitoring --timeout=300s
-          kubectl rollout status ds/node-exporter -n monitoring --timeout=300s
+              for pod in $(kubectl get pods -n monitoring -l app="${dep}" --no-headers 2>/dev/null | awk '{print $1}'); do
+                echo "--- describe pod/${pod} ---"
+                kubectl describe pod "${pod}" -n monitoring || true
+                echo "--- logs pod/${pod} ---"
+                kubectl logs "${pod}" -n monitoring --tail=200 || true
+                echo "--- previous logs pod/${pod} ---"
+                kubectl logs "${pod}" -n monitoring --previous --tail=200 || true
+              done
+
+              kubectl get pods -n monitoring -l app="${dep}" \
+                -o custom-columns=NAME:.metadata.name,WAIT:.status.containerStatuses[0].state.waiting.reason --no-headers \
+                | awk '$2=="ImagePullBackOff" || $2=="ErrImagePull" || $2=="ContainerCreating" {print $1}' \
+                | xargs -r kubectl delete pod -n monitoring --grace-period=0 --force || true
+
+              if [ "$attempt" -lt "$max_attempts" ]; then
+                sleep 20
+              fi
+              attempt=$((attempt + 1))
+            done
+
+            echo "Monitoring rollout failed after ${max_attempts} attempts: ${dep}"
+            return 1
+          }
+
+          wait_monitoring_daemonset() {
+            local ds="$1"
+            local max_attempts=2
+            local attempt=1
+
+            while [ "$attempt" -le "$max_attempts" ]; do
+              echo "=== Monitoring daemonset rollout: ${ds} (attempt ${attempt}/${max_attempts}) ==="
+              if kubectl rollout status "ds/${ds}" -n monitoring --timeout=600s; then
+                return 0
+              fi
+
+              kubectl get ds "${ds}" -n monitoring -o wide || true
+              kubectl get pods -n monitoring -l app="${ds}" -o wide || true
+              kubectl get pods -n monitoring -l app="${ds}" --no-headers 2>/dev/null | awk '{print $1}' | while read -r pod; do
+                [ -z "${pod}" ] && continue
+                kubectl describe pod "${pod}" -n monitoring || true
+                kubectl logs "${pod}" -n monitoring --tail=120 || true
+              done
+
+              if [ "$attempt" -lt "$max_attempts" ]; then
+                sleep 20
+              fi
+              attempt=$((attempt + 1))
+            done
+
+            echo "Monitoring daemonset rollout failed after ${max_attempts} attempts: ${ds}"
+            return 1
+          }
+
+          wait_monitoring_deploy alertmanager
+          wait_monitoring_deploy kube-state-metrics
+          wait_monitoring_daemonset node-exporter
+
           kubectl rollout restart deploy/alertmanager -n monitoring
-          kubectl rollout status deploy/alertmanager -n monitoring --timeout=300s
+          wait_monitoring_deploy alertmanager
           kubectl rollout restart deploy/grafana -n monitoring
-          kubectl rollout status deploy/grafana -n monitoring --timeout=300s
+          wait_monitoring_deploy grafana
           kubectl rollout restart deploy/prometheus -n monitoring
-          kubectl rollout status deploy/prometheus -n monitoring --timeout=300s
+          wait_monitoring_deploy prometheus
 
       - name: Flannel + DNS preflight
         shell: bash

@@ -22,7 +22,7 @@ spec:
         fsGroup: 65534
       containers:
         - name: alertmanager
-          image: prom/alertmanager:v0.28.0
+          image: quay.io/prometheus/alertmanager:v0.28.1
           imagePullPolicy: IfNotPresent
           args:
             - --config.file=/etc/alertmanager/alertmanager.yml
