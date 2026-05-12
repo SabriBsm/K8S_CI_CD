@@ -17,7 +17,7 @@ import java.util.List;
 @Configuration
 public class CorsConfig {
 
-    @Value("${app.cors.allowed-origins:http://localhost:4200,http://127.0.0.1:4200,http://192.168.1.171:30080,http://192.168.1.188:30080,http://192.168.1.171:30085,http://192.168.1.188:30085}")
+    @Value("${app.cors.allowed-origins:http://localhost:4200,http://127.0.0.1:4200,http://192.168.1.171:30080,http://192.168.1.188:30080}")
     private String allowedOrigins;
 
     private List<String> resolveAllowedOrigins() {

@@ -198,6 +198,7 @@ jobs:
           kubectl apply -f k8s/41-alertmanager-configmap.yaml
           kubectl apply -f k8s/42-alertmanager-deployment.yaml
           kubectl apply -f k8s/43-alertmanager-service.yaml
+          kubectl apply -f k8s/44-monitoring-ingress.yaml
 
       - name: Rollout monitoring stack
         shell: bash
@@ -432,4 +433,6 @@ jobs:
           wait_rollout frontend
 
       - name: Final status
-        run: kubectl get pods -n "$NAMESPACE" -o wide
+        run: |
+          kubectl get pods -n "$NAMESPACE" -o wide
+          kubectl get ingress -A -o wide
